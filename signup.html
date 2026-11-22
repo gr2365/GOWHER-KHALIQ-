@@ -67,19 +67,54 @@
     <a class="login-link" href="/login.html">Already have an account? Sign in</a>
   </main>
 
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script>
-    document.getElementById('signupForm').addEventListener('submit', function (event) {
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGsr9puGVC1qXOl2VAllIDP__hjSIuS2o",
+      authDomain: "space-f58de.firebaseapp.com",
+      projectId: "space-f58de",
+      storageBucket: "space-f58de.firebasestorage.app",
+      messagingSenderId: "1025061659875",
+      appId: "1:1025061659875:web:e5546d3b89d6e90a8dd1d6",
+      measurementId: "G-64V1MSL3FX"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    document.getElementById('signupForm').addEventListener('submit', async function (event) {
       event.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const confirmation = document.getElementById('confirmPassword').value;
       const status = document.getElementById('status');
+      const button = event.submitter;
 
       if (password !== confirmation) {
+        status.style.color = '#b91c1c';
         status.textContent = 'Passwords do not match.';
         return;
       }
 
-      status.textContent = 'Sign-up design created. Secure account creation requires a server or authentication service.';
+      button.disabled = true;
+      status.style.color = '#334155';
+      status.textContent = 'Creating account...';
+
+      try {
+        const result = await auth.createUserWithEmailAndPassword(email, password);
+        await result.user.updateProfile({ displayName: name });
+        status.style.color = '#166534';
+        status.textContent = 'Account created successfully.';
+        setTimeout(function () { window.location.href = '/'; }, 800);
+      } catch (error) {
+        status.style.color = '#b91c1c';
+        status.textContent = error.code === 'auth/email-already-in-use'
+          ? 'An account already exists with this email.'
+          : error.message;
+      } finally {
+        button.disabled = false;
+      }
     });
   </script>
 </body>
