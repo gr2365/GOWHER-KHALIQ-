@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login | Gowher Khaliq</title>
+  <meta name="description" content="Login page for Gowher Khaliq's website.">
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      color: #172033;
+      background: linear-gradient(135deg, #172554, #2563eb, #7c3aed);
+    }
+
+    .login-card {
+      width: min(420px, 100%);
+      padding: 38px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 25px 60px rgba(15, 23, 42, 0.28);
+    }
+
+    .brand {
+      margin: 0 0 8px;
+      color: #2563eb;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 28px;
+      text-align: center;
+      font-size: 2rem;
+    }
+
+    label {
+      display: block;
+      margin: 16px 0 7px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font: inherit;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.13);
+    }
+
+    .options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0;
+      font-size: 0.92rem;
+    }
+
+    .options label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0;
+      font-weight: normal;
+    }
+
+    .options input {
+      width: auto;
+    }
+
+    .options a {
+      color: #2563eb;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: 0;
+      border-radius: 10px;
+      color: white;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      font: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover { opacity: 0.92; }
+
+    .status {
+      min-height: 24px;
+      margin: 14px 0 0;
+      color: #b91c1c;
+      text-align: center;
+    }
+
+    .home-link {
+      display: block;
+      margin-top: 8px;
+      color: #334155;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      .login-card { padding: 28px 22px; }
+      .options { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="login-card">
+    <p class="brand">Gowher Khaliq</p>
+    <h1>Welcome Back</h1>
+
+    <form id="loginForm">
+      <label for="email">Email address</label>
+      <input id="email" name="email" type="email" autocomplete="email" required>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" minlength="6" required>
+
+      <div class="options">
+        <label>
+          <input type="checkbox" name="remember">
+          Remember me
+        </label>
+        <a href="#">Forgot password?</a>
+      </div>
+
+      <button type="submit">Log In</button>
+      <p id="status" class="status" aria-live="polite"></p>
+    </form>
+
+    <a class="home-link" href="/">Back to homepage</a>
+  </main>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', function (event) {
+      event.preventEvent ? event.preventEvent() : event.preventDefault();
+      document.getElementById('status').textContent =
+        'This is a login design. Secure authentication requires a server or login service.';
+    });
+  </script>
+</body>
+</html>
