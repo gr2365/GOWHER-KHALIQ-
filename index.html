@@ -1,1 +1,0 @@
-# GOWHER-KHALIQ-
