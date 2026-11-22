@@ -137,7 +137,7 @@
           <input type="checkbox" name="remember">
           Remember me
         </label>
-        <a href="#">Forgot password?</a>
+        <a href="#" id="forgotPassword">Forgot password?</a>
       </div>
 
       <button type="submit">Log In</button>
@@ -147,11 +147,65 @@
     <a class="home-link" href="/">Back to homepage</a>
   </main>
 
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script>
-    document.getElementById('loginForm').addEventListener('submit', function (event) {
-      event.preventEvent ? event.preventEvent() : event.preventDefault();
-      document.getElementById('status').textContent =
-        'This is a login design. Secure authentication requires a server or login service.';
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGsr9puGVC1qXOl2VAllIDP__hjSIuS2o",
+      authDomain: "space-f58de.firebaseapp.com",
+      projectId: "space-f58de",
+      storageBucket: "space-f58de.firebasestorage.app",
+      messagingSenderId: "1025061659875",
+      appId: "1:1025061659875:web:e5546d3b89d6e90a8dd1d6",
+      measurementId: "G-64V1MSL3FX"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    document.getElementById('loginForm').addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const status = document.getElementById('status');
+      const button = event.submitter;
+      button.disabled = true;
+      status.textContent = 'Signing in...';
+
+      try {
+        await auth.setPersistence(document.querySelector('[name="remember"]').checked
+          ? firebase.auth.Auth.Persistence.LOCAL
+          : firebase.auth.Auth.Persistence.SESSION);
+        await auth.signInWithEmailAndPassword(email, password);
+        status.style.color = '#166534';
+        status.textContent = 'Signed in successfully.';
+        window.location.href = '/';
+      } catch (error) {
+        status.style.color = '#b91c1c';
+        status.textContent = error.code === 'auth/invalid-credential'
+          ? 'Incorrect email or password.'
+          : error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.getElementById('forgotPassword').addEventListener('click', async function (event) {
+      event.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const status = document.getElementById('status');
+      if (!email) {
+        status.style.color = '#b91c1c';
+        status.textContent = 'Enter your email address first.';
+        return;
+      }
+      try {
+        await auth.sendPasswordResetEmail(email);
+        status.style.color = '#166534';
+        status.textContent = 'Password reset email sent.';
+      } catch (error) {
+        status.style.color = '#b91c1c';
+        status.textContent = error.message;
+      }
     });
   </script>
 </body>
