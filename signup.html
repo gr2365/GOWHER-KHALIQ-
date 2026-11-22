@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Account | Gowher Khaliq</title>
+  <meta name="description" content="Create an account for Gowher Khaliq's website.">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh; margin: 0; display: grid; place-items: center;
+      padding: 20px; font-family: Arial, sans-serif; color: #172033;
+      background: linear-gradient(135deg, #172554, #2563eb, #7c3aed);
+    }
+    .signup-card {
+      width: min(460px, 100%); padding: 38px; border: 1px solid rgba(255,255,255,.35);
+      border-radius: 24px; background: rgba(255,255,255,.96);
+      box-shadow: 0 25px 60px rgba(15,23,42,.28);
+    }
+    .brand { margin: 0 0 8px; color: #2563eb; font-size: 1.1rem; text-align: center; }
+    h1 { margin: 0 0 26px; text-align: center; font-size: 2rem; }
+    label { display: block; margin: 14px 0 7px; font-weight: bold; }
+    input {
+      width: 100%; padding: 13px 14px; border: 1px solid #cbd5e1;
+      border-radius: 10px; font: inherit; outline: none;
+    }
+    input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.13); }
+    .terms { display: flex; align-items: flex-start; gap: 8px; margin: 16px 0; }
+    .terms input { width: auto; margin-top: 5px; }
+    .terms label { margin: 0; font-weight: normal; }
+    button {
+      width: 100%; padding: 14px; border: 0; border-radius: 10px;
+      color: white; background: linear-gradient(135deg, #2563eb, #7c3aed);
+      font: inherit; font-weight: bold; cursor: pointer;
+    }
+    button:hover { opacity: .92; }
+    .status { min-height: 24px; margin: 14px 0 0; color: #b91c1c; text-align: center; }
+    .login-link { display: block; margin-top: 8px; color: #334155; text-align: center; }
+    @media (max-width: 480px) { .signup-card { padding: 28px 22px; } }
+  </style>
+</head>
+<body>
+  <main class="signup-card">
+    <p class="brand">Gowher Khaliq</p>
+    <h1>Create Account</h1>
+    <form id="signupForm">
+      <label for="name">Full name</label>
+      <input id="name" name="name" type="text" autocomplete="name" required>
+
+      <label for="email">Email address</label>
+      <input id="email" name="email" type="email" autocomplete="email" required>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+
+      <label for="confirmPassword">Confirm password</label>
+      <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+
+      <div class="terms">
+        <input id="terms" type="checkbox" required>
+        <label for="terms">I agree to the Terms and Privacy Policy.</label>
+      </div>
+
+      <button type="submit">Create Account</button>
+      <p id="status" class="status" aria-live="polite"></p>
+    </form>
+    <a class="login-link" href="/login.html">Already have an account? Sign in</a>
+  </main>
+
+  <script>
+    document.getElementById('signupForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+      const password = document.getElementById('password').value;
+      const confirmation = document.getElementById('confirmPassword').value;
+      const status = document.getElementById('status');
+
+      if (password !== confirmation) {
+        status.textContent = 'Passwords do not match.';
+        return;
+      }
+
+      status.textContent = 'Sign-up design created. Secure account creation requires a server or authentication service.';
+    });
+  </script>
+</body>
+</html>
