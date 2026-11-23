@@ -18,8 +18,8 @@
     .card button { border: 0; border-radius: 999px; padding: 14px 28px; font-weight: 900; font-size: 16px; color: #07112c; background: linear-gradient(135deg, #67e8f9, #c4b5fd); cursor: pointer; }
     .back { position: fixed; right: 18px; bottom: 18px; z-index: 3; color: #cbd5e1; text-decoration: none; background: #0f172acc; border: 1px solid #64748b; padding: 10px 14px; border-radius: 999px; }
     .pause { position: fixed; right: 18px; top: 66px; z-index: 3; border: 1px solid #64748b; border-radius: 999px; background: #0f172acc; color: white; padding: 10px 14px; }
-    .controls { position: fixed; left: 18px; bottom: 18px; display: flex; gap: 8px; }
-    .controls button { width: 58px; height: 58px; border: 1px solid #94a3b855; border-radius: 18px; background: #0f172acc; color: white; font-size: 16px; touch-action: none; }
+    .controls { position: fixed; left: 18px; bottom: 18px; display: flex; gap: 10px; }
+    .controls button { width: 72px; height: 72px; border: 1px solid #94a3b855; border-radius: 18px; background: #0f172acc; color: white; font-size: 14px; font-weight: 900; touch-action: none; user-select: none; box-shadow: 0 8px 28px #020617; }
     .hidden { display: none; }
     @media (min-width: 700px) { .controls { display: none; } }
   </style>
@@ -252,6 +252,21 @@
       glow.addColorStop(1, "#020617");
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, width, height);
+      ctx.save();
+      ctx.translate(width * 0.78, height * 0.18);
+      ctx.rotate(-0.32);
+      ctx.scale(1.5, 0.55);
+      const galaxy = ctx.createRadialGradient(0, 0, 3, 0, 0, 150);
+      galaxy.addColorStop(0, "#fffbe8");
+      galaxy.addColorStop(0.12, "#dbeafecc");
+      galaxy.addColorStop(0.42, "#818cf8aa");
+      galaxy.addColorStop(0.75, "#312e8177");
+      galaxy.addColorStop(1, "#02061700");
+      ctx.fillStyle = galaxy;
+      ctx.beginPath();
+      ctx.arc(0, 0, 150, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
       ctx.fillStyle = "#fff";
       for (const star of stars) {
         ctx.globalAlpha = 0.35 + star.size * 0.25;
