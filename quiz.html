@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI General Knowledge Quiz | Gowher Khaliq</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: Inter, system-ui, sans-serif; color: #e2e8f0; background: linear-gradient(135deg, #071126, #172554, #312e81); }
+    main { width: min(760px, calc(100% - 32px)); margin: 32px auto; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .top a { color: #c4b5fd; text-decoration: none; }
+    h1 { margin: 8px 0 3px; font-size: clamp(30px, 7vw, 52px); }
+    .subtitle { color: #a5b4fc; margin-top: 0; }
+    .card { padding: 28px; border: 1px solid #818cf855; border-radius: 24px; background: #0f172add; box-shadow: 0 24px 70px #02061788; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+    .stat { padding: 12px; text-align: center; border-radius: 14px; background: #1e293b; }
+    .stat strong { display: block; color: #67e8f9; font-size: 20px; }
+    #category { color: #facc15; font-weight: 800; }
+    #question { min-height: 58px; font-size: clamp(21px, 4vw, 29px); }
+    .answers { display: grid; gap: 10px; }
+    .answer { width: 100%; min-height: 54px; padding: 12px 16px; border: 1px solid #64748b88; border-radius: 14px; color: white; background: #1e293bcc; text-align: left; font: inherit; cursor: pointer; }
+    .answer:hover:not(:disabled) { border-color: #818cf8; background: #312e81; }
+    .answer.correct { border-color: #22c55e; background: #166534; }
+    .answer.wrong { border-color: #ef4444; background: #991b1b; }
+    #feedback { min-height: 48px; margin: 16px 0 4px; color: #cbd5e1; }
+    #next { width: 100%; border: 0; border-radius: 14px; padding: 14px; color: #07112c; background: linear-gradient(135deg, #67e8f9, #c4b5fd); font: inherit; font-weight: 900; cursor: pointer; }
+    .hidden { display: none; }
+    @media (max-width: 520px) { main { margin-top: 18px; } .card { padding: 18px; } .stats { gap: 6px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top"><a href="/">Back Home</a><span id="mode">Adaptive Mode</span></div>
+    <h1>Knowledge Navigator</h1>
+    <p class="subtitle">An adaptive AI-style general knowledge quiz.</p>
+    <section class="card">
+      <div class="stats">
+        <div class="stat"><strong id="score">0</strong>Score</div>
+        <div class="stat"><strong id="progress">1/12</strong>Question</div>
+        <div class="stat"><strong id="difficulty">Easy</strong>Level</div>
+      </div>
+      <p id="category">General Knowledge</p>
+      <h2 id="question">Loading question...</h2>
+      <div id="answers" class="answers"></div>
+      <p id="feedback"></p>
+      <button id="next" class="hidden" type="button">Next Question</button>
+    </section>
+  </main>
+
+  <script>
+    const questions = [
+      { difficulty: "Easy", category: "Geography", q: "Which is the largest continent by area?", a: ["Africa", "Asia", "Europe", "North America"], c: 1, note: "Asia is the largest continent, covering about 30% of Earth's land area." },
+      { difficulty: "Easy", category: "Astronomy", q: "Which planet is known as the Red Planet?", a: ["Venus", "Mars", "Jupiter", "Mercury"], c: 1, note: "Iron minerals in Martian soil give Mars its reddish appearance." },
+      { difficulty: "Easy", category: "Science", q: "What gas do plants absorb during photosynthesis?", a: ["Oxygen", "Nitrogen", "Carbon dioxide", "Hydrogen"], c: 2, note: "Plants absorb carbon dioxide and produce oxygen." },
+      { difficulty: "Easy", category: "History", q: "In which country are the pyramids of Giza located?", a: ["Greece", "Mexico", "Egypt", "India"], c: 2, note: "The Giza pyramid complex is near Cairo, Egypt." },
+      { difficulty: "Easy", category: "Sports", q: "How many players are on the field for one football team?", a: ["9", "10", "11", "12"], c: 2, note: "Association football teams field 11 players including the goalkeeper." },
+      { difficulty: "Easy", category: "Geography", q: "What is the capital of India?", a: ["Mumbai", "Kolkata", "New Delhi", "Chennai"], c: 2, note: "New Delhi is the capital of India." },
+      { difficulty: "Easy", category: "Science", q: "Which organ pumps blood through the human body?", a: ["Lungs", "Brain", "Heart", "Kidney"], c: 2, note: "The heart pumps blood through the circulatory system." },
+      { difficulty: "Medium", category: "Geology", q: "Which type of rock is formed from cooled magma or lava?", a: ["Sedimentary", "Metamorphic", "Igneous", "Fossiliferous"], c: 2, note: "Igneous rocks form when molten rock cools and solidifies." },
+      { difficulty: "Medium", category: "Astronomy", q: "What is the closest star to Earth after the Sun?", a: ["Sirius", "Betelgeuse", "Proxima Centauri", "Polaris"], c: 2, note: "Proxima Centauri is about 4.24 light-years away." },
+      { difficulty: "Medium", category: "Geography", q: "Which ocean is the deepest?", a: ["Atlantic", "Indian", "Pacific", "Arctic"], c: 2, note: "The Pacific Ocean contains the deepest point, Challenger Deep." },
+      { difficulty: "Medium", category: "Science", q: "What is the chemical symbol for gold?", a: ["Ag", "Au", "Gd", "Go"], c: 1, note: "Au comes from the Latin word aurum." },
+      { difficulty: "Medium", category: "History", q: "Who wrote the Indian national anthem?", a: ["Bankim Chandra", "Rabindranath Tagore", "Sarojini Naidu", "Mahatma Gandhi"], c: 1, note: "Rabindranath Tagore wrote Jana Gana Mana." },
+      { difficulty: "Medium", category: "Geology", q: "Which scale is commonly used to measure earthquake magnitude?", a: ["Beaufort", "Richter", "Mohs", "Kelvin"], c: 1, note: "The Richter scale is a familiar logarithmic earthquake magnitude scale." },
+      { difficulty: "Medium", category: "Literature", q: "Who wrote Hamlet?", a: ["Charles Dickens", "William Shakespeare", "John Milton", "George Eliot"], c: 1, note: "William Shakespeare wrote Hamlet in the early 17th century." },
+      { difficulty: "Hard", category: "Astronomy", q: "What is a light-year a measurement of?", a: ["Time", "Brightness", "Distance", "Speed"], c: 2, note: "A light-year is the distance light travels in one year." },
+      { difficulty: "Hard", category: "Geology", q: "Which mineral is number 10 on the Mohs hardness scale?", a: ["Quartz", "Topaz", "Corundum", "Diamond"], c: 3, note: "Diamond is the hardest natural mineral on the Mohs scale." },
+      { difficulty: "Hard", category: "Science", q: "What particle has a negative electric charge?", a: ["Proton", "Neutron", "Electron", "Photon"], c: 2, note: "Electrons carry a negative electric charge." },
+      { difficulty: "Hard", category: "Geography", q: "Which line divides Earth into northern and southern hemispheres?", a: ["Prime Meridian", "Equator", "Tropic of Capricorn", "Arctic Circle"], c: 1, note: "The Equator is at zero degrees latitude." },
+      { difficulty: "Hard", category: "History", q: "The ancient city of Petra is in which modern country?", a: ["Jordan", "Lebanon", "Syria", "Yemen"], c: 0, note: "Petra is in southern Jordan." },
+      { difficulty: "Hard", category: "Astronomy", q: "What is the boundary around a black hole beyond which light cannot escape?", a: ["Photon belt", "Event horizon", "Solar corona", "Asteroid belt"], c: 1, note: "The event horizon is the point of no return around a black hole." },
+      { difficulty: "Hard", category: "Science", q: "What is the SI unit of electrical resistance?", a: ["Volt", "Ampere", "Ohm", "Watt"], c: 2, note: "Electrical resistance is measured in ohms." },
+      { difficulty: "Hard", category: "Geography", q: "Which current carries warm water from the Gulf of Mexico into the Atlantic?", a: ["Kuroshio", "Gulf Stream", "Humboldt", "Labrador"], c: 1, note: "The Gulf Stream strongly influences Atlantic climate." }
+    ];
+
+    let asked = [], score = 0, index = 0, streak = 0, target = 12;
+    let level = "Easy";
+
+    function available() {
+      let pool = questions.filter(q => !asked.includes(q) && q.difficulty === level);
+      if (!pool.length) pool = questions.filter(q => !asked.includes(q));
+      return pool;
+    }
+
+    function shuffle(array) {
+      return array.map(value => ({ value, order: Math.random() })).sort((a, b) => a.order - b.order).map(item => item.value);
+    }
+
+    function showQuestion() {
+      if (index >= target) { finish(); return; }
+      const pool = available();
+      const question = pool[Math.floor(Math.random() * pool.length)];
+      asked.push(question);
+      const answerMap = question.a.map((text, originalIndex) => ({ text, originalIndex }));
+      const shuffled = shuffle(answerMap);
+      const correctPosition = shuffled.findIndex(item => item.originalIndex === question.c);
+
+      document.getElementById("category").textContent = question.category + " | " + question.difficulty;
+      document.getElementById("question").textContent = question.q;
+      document.getElementById("progress").textContent = (index + 1) + "/" + target;
+      document.getElementById("difficulty").textContent = level;
+      document.getElementById("feedback").textContent = "";
+      document.getElementById("next").classList.add("hidden");
+      const answerBox = document.getElementById("answers");
+      answerBox.replaceChildren();
+
+      shuffled.forEach((item, position) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "answer";
+        button.textContent = item.text;
+        button.addEventListener("click", () => {
+          if (answerBox.dataset.answered) return;
+          answerBox.dataset.answered = "true";
+          const buttons = answerBox.querySelectorAll("button");
+          buttons.forEach((button, buttonIndex) => {
+            button.disabled = true;
+            if (buttonIndex === correctPosition) button.classList.add("correct");
+          });
+          if (position === correctPosition) {
+            streak++;
+            score += level === "Hard" ? 30 : level === "Medium" ? 20 : 10;
+            if (streak >= 2 && level === "Easy") level = "Medium";
+            if (streak >= 4 && level === "Medium") level = "Hard";
+            document.getElementById("feedback").textContent = "Correct. " + question.note;
+          } else {
+            streak = 0;
+            button.classList.add("wrong");
+            if (level === "Hard") level = "Medium";
+            else if (level === "Medium") level = "Easy";
+            document.getElementById("feedback").textContent = "Not quite. " + question.note;
+          }
+          document.getElementById("score").textContent = score;
+          document.getElementById("difficulty").textContent = level;
+          document.getElementById("next").classList.remove("hidden");
+        });
+        answerBox.appendChild(button);
+      });
+      delete answerBox.dataset.answered;
+      index++;
+    }
+
+    function finish() {
+      document.getElementById("category").textContent = "Quiz complete";
+      document.getElementById("question").textContent = "Final score: " + score;
+      document.getElementById("progress").textContent = target + "/" + target;
+      document.getElementById("answers").replaceChildren();
+      document.getElementById("feedback").textContent =
+        score >= 220 ? "Excellent navigator! Your knowledge is strong." :
+        score >= 150 ? "Great result. Keep exploring and learning." :
+        "Good start. Practice another round to improve.";
+      document.getElementById("next").textContent = "Play Again";
+      document.getElementById("next").classList.remove("hidden");
+      document.getElementById("next").onclick = () => location.reload();
+    }
+
+    document.getElementById("next").addEventListener("click", showQuestion);
+    showQuestion();
+  </script>
+</body>
+</html>
