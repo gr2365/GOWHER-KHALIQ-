@@ -117,6 +117,11 @@
     @keyframes lineWrite { from { width: 0; } to { width: 34ch; } }
     @keyframes fadeLine { to { opacity: 1; } }
 
+  
+    .running-line { overflow: hidden; width: 100%; margin: 18px 0 8px; border-block: 1px solid #fef08a55; background: #02061733; }
+    .running-line span { display: block; width: max-content; padding: 10px 0; color: #fef08a; font-size: clamp(1rem, 3vw, 1.5rem); font-weight: 900; letter-spacing: .12em; white-space: nowrap; animation: runningLine 14s linear infinite; }
+    @keyframes runningLine { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
+
   </style>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7727917743468278"
      crossorigin="anonymous"></script>
@@ -124,9 +129,8 @@
 
 <body>
   <header>
-    <div class="name-reveal">
-      <span>GOWHER KHALIQ</span>
-      <span class="university">ALIGARH MUSLIM UNIVERSITY</span>
+    <div class="running-line" aria-label="GOWHER KHALIQ IS AT ALIGARH MUSLIM UNIVERSITY">
+      <span>GOWHER KHALIQ IS AT ALIGARH MUSLIM UNIVERSITY &nbsp; • &nbsp; GOWHER KHALIQ IS AT ALIGARH MUSLIM UNIVERSITY</span>
     </div>
     <p>Exploring Earth, Geography, Geology and the Universe</p>
   </header>
