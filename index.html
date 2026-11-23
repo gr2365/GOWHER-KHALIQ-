@@ -122,6 +122,13 @@
     .running-line span { display: block; width: max-content; padding: 10px 0; color: #fef08a; font-size: clamp(1rem, 3vw, 1.5rem); font-weight: 900; letter-spacing: .12em; white-space: nowrap; animation: runningLine 14s linear infinite; }
     @keyframes runningLine { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
 
+  
+    .sheets { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; }
+    .sheet { display: block; min-height: 150px; padding: 22px; border: 1px solid #93c5fd55; border-radius: 18px; color: white; text-decoration: none; background: linear-gradient(135deg, #1e3a8a, #4c1d95); box-shadow: 0 12px 28px #02061755; transition: transform .2s, box-shadow .2s; }
+    .sheet:hover { transform: translateY(-5px); box-shadow: 0 18px 34px #02061788; }
+    .sheet strong { display: block; margin-bottom: 8px; font-size: 1.2rem; color: #fef08a; }
+    .footer { margin-top: 40px; padding: 28px 20px; text-align: center; color: #cbd5e1; background: #020617dd; }
+
   </style>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7727917743468278"
      crossorigin="anonymous"></script>
@@ -196,6 +203,16 @@
       <p>Email: gowherkhaliq07@gmail.com</p>
     </section>
   </main>
+
+  <section id="sheets">
+    <h2>Study Sheets</h2>
+    <div class="sheets">
+      <a class="sheet" href="#notes"><strong>Universe Notes</strong><span>Planets, stars, galaxies and key astronomy concepts.</span></a>
+      <a class="sheet" href="#notes"><strong>Geography Notes</strong><span>Maps, climate, population and world regions.</span></a>
+      <a class="sheet" href="#notes"><strong>Geology Notes</strong><span>Rocks, minerals, fossils and Earth processes.</span></a>
+      <a class="sheet" href="/quiz.html"><strong>General Knowledge</strong><span>Practice with the adaptive knowledge quiz.</span></a>
+    </div>
+  </section>
 
   <footer>
     <p>© 2026 Gowher Khaliq. All rights reserved.</p>
