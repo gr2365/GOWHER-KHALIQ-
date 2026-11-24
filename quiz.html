@@ -13,7 +13,7 @@
     .top a { color: #c4b5fd; text-decoration: none; }
     h1 { margin: 8px 0 3px; font-size: clamp(30px, 7vw, 52px); }
     .subtitle { color: #a5b4fc; margin-top: 0; }
-    .card { padding: 28px; border: 1px solid #818cf855; border-radius: 24px; background: #0f172add; box-shadow: 0 24px 70px #02061788; }
+    .card { visibility: hidden; padding: 28px; border: 1px solid #818cf855; border-radius: 24px; background: #0f172add; box-shadow: 0 24px 70px #02061788; }
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
     .stat { padding: 12px; text-align: center; border-radius: 14px; background: #1e293b; }
     .stat strong { display: block; color: #67e8f9; font-size: 20px; }
@@ -35,7 +35,7 @@
     <div class="top"><a href="/">Back Home</a><span id="mode">Adaptive Mode</span></div>
     <h1>Knowledge Navigator</h1>
     <p class="subtitle">An adaptive AI-style general knowledge quiz.</p>
-    <section class="card">
+    <section class="card" id="quizCard">
       <div class="stats">
         <div class="stat"><strong id="score">0</strong>Score</div>
         <div class="stat"><strong id="progress">1/12</strong>Question</div>
@@ -49,6 +49,17 @@
     </section>
   </main>
 
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig={apiKey:"AIzaSyBGsr9puGVC1qXOl2VAllIDP__hjSIuS2o",authDomain:"space-f58de.firebaseapp.com",projectId:"space-f58de",storageBucket:"space-f58de.firebasestorage.app",messagingSenderId:"1025061659875",appId:"1:1025061659875:web:e5546d3b89d6e90a8dd1d6",measurementId:"G-64V1MSL3FX"};
+    firebase.initializeApp(firebaseConfig);
+    const quizAuth=firebase.auth();
+    quizAuth.onAuthStateChanged(function(user){
+      if(!user){ window.location.replace('/login.html'); return; }
+      document.getElementById('quizCard').style.visibility='visible';
+    });
+  </script>
   <script>
     const questions = [
       { difficulty: "Easy", category: "Geography", q: "Which is the largest continent by area?", a: ["Africa", "Asia", "Europe", "North America"], c: 1, note: "Asia is the largest continent, covering about 30% of Earth's land area." },
