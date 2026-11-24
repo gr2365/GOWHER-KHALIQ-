@@ -5,17 +5,24 @@
 <title>Solar System Explorer | Gowher Khaliq</title>
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;overflow:hidden;font-family:system-ui,sans-serif;color:#e2e8f0;background:radial-gradient(circle at 50% 55%,#172554 0,#020617 58%,#000 100%)}canvas{position:fixed;inset:0;width:100%;height:100%}.hud{position:fixed;top:16px;left:50%;z-index:3;width:min(620px,calc(100%-32px));transform:translateX(-50%);padding:12px 16px;border:1px solid #93c5fd55;border-radius:18px;background:#020617cc;text-align:center;backdrop-filter:blur(8px)}.hud h1{margin:0;font-size:clamp(20px,5vw,32px)}.hud p{margin:4px 0 0;color:#cbd5e1}.back{position:fixed;left:18px;bottom:18px;z-index:4;color:white;text-decoration:none;border:1px solid #64748b;border-radius:999px;padding:10px 15px;background:#0f172acc}.score{position:fixed;right:18px;top:16px;z-index:4;font-weight:900;border:1px solid #64748b;border-radius:999px;padding:10px 15px;background:#0f172acc}.toast{position:fixed;bottom:70px;left:50%;z-index:5;padding:12px 18px;border:1px solid #67e8f955;border-radius:14px;background:#111827ed;transform:translate(-50%,30px);opacity:0;transition:.35s;text-align:center}.toast.show{opacity:1;transform:translate(-50%,0)}.planet-info{position:fixed;right:18px;bottom:18px;z-index:4;width:min(310px,calc(100%-36px));padding:16px;border:1px solid #818cf855;border-radius:18px;background:#0f172ae8;display:none}.planet-info h2{margin:0 0 6px;color:#67e8f9}.planet-info p{margin:0;color:#cbd5e1;font-size:14px}@media(max-width:700px){.score{top:92px}.planet-info{bottom:64px}}
+
+.bottom-bar{position:fixed;left:50%;bottom:14px;z-index:6;display:flex;gap:10px;transform:translateX(-50%);padding:8px;border:1px solid #93c5fd55;border-radius:999px;background:#0f172acc;backdrop-filter:blur(8px)}
+.bottom-bar a,.bottom-bar button{min-height:44px;padding:10px 16px;border:1px solid #64748b;border-radius:999px;color:white;background:#1e293b;text-decoration:none;font:700 15px system-ui;cursor:pointer}.bottom-bar button:hover,.bottom-bar a:hover{background:#312e81}
 </style>
 </head>
 <body>
 <canvas id="sky"></canvas>
 <div class="hud"><h1>Solar System Explorer</h1><p id="challenge">Find Mercury</p></div>
 <div class="score" id="score">Points: 0</div>
-<a class="back" href="/">← Home</a>
+<nav class="bottom-bar" aria-label="Game controls">
+  <a href="/">← Home</a>
+  <button id="pauseGame" type="button">Pause</button>
+  <button id="resetGame" type="button">Restart</button>
+</nav>
 <aside class="planet-info" id="info"><h2 id="planetName"></h2><p id="planetText"></p></aside>
 <div class="toast" id="toast"></div>
 <script>
-const canvas=document.getElementById('sky'),ctx=canvas.getContext('2d');let w,h,dpr,targetsFound=0,points=0,activeIndex=0,stars=[];
+const canvas=document.getElementById('sky'),ctx=canvas.getContext('2d');let w,h,dpr,targetsFound=0,points=0,activeIndex=0,stars=[];let paused=false;
 const planets=[
 {name:'Mercury',radius:4,distance:55,speed:.025,color:'#a8a29e',info:'The smallest planet and the closest planet to the Sun.'},
 {name:'Venus',radius:8,distance:82,speed:.018,color:'#facc15',info:'The hottest planet, with a thick carbon-dioxide atmosphere.'},
@@ -28,10 +35,12 @@ const planets=[
 ];
 function resize(){dpr=Math.min(devicePixelRatio||1,2);w=innerWidth;h=innerHeight;canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);stars=Array.from({length:Math.floor(w*h/6500)},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.4+.2,a:Math.random()}))}
 addEventListener('resize',resize);resize();let start=performance.now();
+document.getElementById('pauseGame').addEventListener('click',()=>{paused=!paused;document.getElementById('pauseGame').textContent=paused?'Resume':'Pause'});
+document.getElementById('resetGame').addEventListener('click',()=>{targetsFound=0;points=0;activeIndex=0;paused=false;document.getElementById('pauseGame').textContent='Pause';document.getElementById('score').textContent='Points: 0';document.getElementById('challenge').textContent='Find Mercury';document.getElementById('info').style.display='none';toast('Challenge restarted')});
 canvas.addEventListener('pointerdown',event=>{const rect=canvas.getBoundingRect(),x=event.clientX,y=event.clientY;const cx=w/2,cy=h/2,t=(performance.now()-start)/1000;let hit=false;planets.forEach((p,i)=>{const angle=t*p.speed+i*.73;const px=cx+Math.cos(angle)*Math.min(p.distance,w*.29);const py=cy+Math.sin(angle)*Math.min(p.distance,h*.34);if(Math.hypot(x-px,y-py)<Math.max(p.radius+12,24)){hit=true;showPlanet(p);if(i===activeIndex){targetsFound++;points+=100+targetsFound*20;document.getElementById('score').textContent='Points: '+points;activeIndex=(activeIndex+1)%planets.length;const next=planets[activeIndex];document.getElementById('challenge').textContent='Great! Now find '+next.name;toast('Correct! +'+(100+targetsFound*20)+' points')}}});if(!hit)toast('Try another planet')});
 function toast(message){const el=document.getElementById('toast');el.textContent=message;el.classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>el.classList.remove('show'),1800)}
 function showPlanet(p){document.getElementById('planetName').textContent=p.name;document.getElementById('planetText').textContent=p.info;document.getElementById('info').style.display='block'}
-function draw(time){const t=(time-start)/1000;ctx.clearRect(0,0,w,h);ctx.fillStyle='#020617';ctx.fillRect(0,0,w,h);for(const s of stars){ctx.globalAlpha=.25+(.45*Math.abs(Math.sin(t+s.a*6)));ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;const cx=w/2,cy=h/2;for(const p of planets){ctx.strokeStyle='#94a3b82a';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(cx,cy,Math.min(p.distance,w*.29),Math.min(p.distance,h*.34),0,0,Math.PI*2);ctx.stroke()}const sun=ctx.createRadialGradient(cx,cy,4,cx,cy,38);sun.addColorStop(0,'#fff7ae');sun.addColorStop(.25,'#fde047');sun.addColorStop(.7,'#fb923c');sun.addColorStop(1,'#fb923c22');ctx.fillStyle=sun;ctx.shadowBlur=38;ctx.shadowColor='#facc15';ctx.beginPath();ctx.arc(cx,cy,25,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;planets.forEach((p,i)=>{const angle=t*p.speed+i*.73;const px=cx+Math.cos(angle)*Math.min(p.distance,w*.29);const py=cy+Math.sin(angle)*Math.min(p.distance,h*.34);ctx.save();ctx.translate(px,py);if(p.name==='Saturn'){ctx.strokeStyle='#fde68a';ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(0,0,p.radius*1.7,p.radius*.65,0,0,Math.PI*2);ctx.stroke()}ctx.shadowBlur=12;ctx.shadowColor=p.color;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(0,0,p.radius,0,Math.PI*2);ctx.fill();ctx.restore()});requestAnimationFrame(draw)}requestAnimationFrame(draw);
+function draw(time){const t=(time-(paused?start+0:start))/1000;ctx.clearRect(0,0,w,h);ctx.fillStyle='#020617';ctx.fillRect(0,0,w,h);for(const s of stars){ctx.globalAlpha=.25+(.45*Math.abs(Math.sin(t+s.a*6)));ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;const cx=w/2,cy=h/2;for(const p of planets){ctx.strokeStyle='#94a3b82a';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(cx,cy,Math.min(p.distance,w*.29),Math.min(p.distance,h*.34),0,0,Math.PI*2);ctx.stroke()}const sun=ctx.createRadialGradient(cx,cy,4,cx,cy,38);sun.addColorStop(0,'#fff7ae');sun.addColorStop(.25,'#fde047');sun.addColorStop(.7,'#fb923c');sun.addColorStop(1,'#fb923c22');ctx.fillStyle=sun;ctx.shadowBlur=38;ctx.shadowColor='#facc15';ctx.beginPath();ctx.arc(cx,cy,25,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;planets.forEach((p,i)=>{const angle=t*p.speed+i*.73;const px=cx+Math.cos(angle)*Math.min(p.distance,w*.29);const py=cy+Math.sin(angle)*Math.min(p.distance,h*.34);ctx.save();ctx.translate(px,py);if(p.name==='Saturn'){ctx.strokeStyle='#fde68a';ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(0,0,p.radius*1.7,p.radius*.65,0,0,Math.PI*2);ctx.stroke()}ctx.shadowBlur=12;ctx.shadowColor=p.color;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(0,0,p.radius,0,Math.PI*2);ctx.fill();ctx.restore()});requestAnimationFrame(draw)}requestAnimationFrame(draw);
 </script>
 </body>
 </html>
