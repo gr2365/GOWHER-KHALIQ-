@@ -1,3 +1,13 @@
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig={apiKey:"AIzaSyBGsr9puGVC1qXOl2VAllIDP__hjSIuS2o",authDomain:"space-f58de.firebaseapp.com",projectId:"space-f58de",storageBucket:"space-f58de.firebasestorage.app",messagingSenderId:"1025061659875",appId:"1:1025061659875:web:e5546d3b89d6e90a8dd1d6",measurementId:"G-64V1MSL3FX"};
+    firebase.initializeApp(firebaseConfig);
+    firebase.auth().onAuthStateChanged(function(user){
+      const quiz=document.getElementById('quizNav');
+      if(quiz) quiz.hidden=!user;
+    });
+  </script>
 </body>
 </html>
 <!doctype html>
@@ -162,7 +172,7 @@
     
     <a href="/space-game.html">Space Game</a>
     
-    <a href="/quiz.html">Knowledge Quiz</a>
+    <a href="/quiz.html" id="quizNav" hidden>Knowledge Quiz</a>
   </nav>
 
   <main>
