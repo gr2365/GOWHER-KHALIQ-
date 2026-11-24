@@ -98,12 +98,17 @@
       { difficulty: "Hard", category: "Geography", q: "What is the capital of New Zealand?", a: ["Auckland", "Christchurch", "Wellington", "Queenstown"], c: 2, note: "Wellington is the capital of New Zealand." }
     ];
 
-    let asked = [], score = 0, index = 0, streak = 0, target = 12;
+    let asked = [], score = 0, index = 0, streak = 0, target = Infinity;
     let level = "Easy";
 
     function available() {
       let pool = questions.filter(q => !asked.includes(q) && q.difficulty === level);
       if (!pool.length) pool = questions.filter(q => !asked.includes(q));
+      if (!pool.length) {
+        asked = [];
+        pool = questions.filter(q => q.difficulty === level);
+        if (!pool.length) pool = questions.slice();
+      }
       return pool;
     }
 
@@ -112,7 +117,9 @@
     }
 
     function showQuestion() {
-      if (index >= target) { finish(); return; }
+      if (!Number.isFinite(target) && index >= questions.length) {
+        index = 0;
+      }
       const pool = available();
       const question = pool[Math.floor(Math.random() * pool.length)];
       asked.push(question);
@@ -122,7 +129,7 @@
 
       document.getElementById("category").textContent = question.category + " | " + question.difficulty;
       document.getElementById("question").textContent = question.q;
-      document.getElementById("progress").textContent = (index + 1) + "/" + target;
+      document.getElementById("progress").textContent = (index + 1) + " / Unlimited";
       document.getElementById("difficulty").textContent = level;
       document.getElementById("feedback").textContent = "";
       document.getElementById("next").classList.add("hidden");
@@ -168,7 +175,7 @@
     function finish() {
       document.getElementById("category").textContent = "Quiz complete";
       document.getElementById("question").textContent = "Final score: " + score;
-      document.getElementById("progress").textContent = target + "/" + target;
+      document.getElementById("progress").textContent = "Unlimited";
       document.getElementById("answers").replaceChildren();
       document.getElementById("feedback").textContent =
         score >= 220 ? "Excellent navigator! Your knowledge is strong." :
