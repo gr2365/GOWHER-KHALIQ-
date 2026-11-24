@@ -8,14 +8,14 @@
 
 .bottom-bar{position:fixed;left:50%;bottom:14px;z-index:6;display:flex;gap:10px;transform:translateX(-50%);padding:8px;border:1px solid #93c5fd55;border-radius:999px;background:#0f172acc;backdrop-filter:blur(8px)}
 .bottom-bar a,.bottom-bar button{min-height:44px;padding:10px 16px;border:1px solid #64748b;border-radius:999px;color:white;background:#1e293b;text-decoration:none;font:700 15px system-ui;cursor:pointer}.bottom-bar button:hover,.bottom-bar a:hover{background:#312e81}
-</style>
+.top-home{position:fixed;left:18px;top:16px;z-index:7;color:white;text-decoration:none;border:1px solid #64748b;border-radius:999px;padding:10px 15px;background:#0f172acc}</style>
 </head>
 <body>
 <canvas id="sky"></canvas>
+<a class="top-home" href="/">← Home</a>
 <div class="hud"><h1>Solar System Explorer</h1><p id="challenge">Find Mercury</p></div>
 <div class="score" id="score">Points: 0</div>
 <nav class="bottom-bar" aria-label="Game controls">
-  <a href="/">← Home</a>
   <button id="pauseGame" type="button">Pause</button>
   <button id="resetGame" type="button">Restart</button>
 </nav>
