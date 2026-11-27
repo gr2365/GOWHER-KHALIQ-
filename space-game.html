@@ -16,12 +16,15 @@
     .card h1 { margin: 0 0 8px; font-size: clamp(36px, 8vw, 68px); background: linear-gradient(135deg, #67e8f9, #a78bfa, #f472b6); background-clip: text; color: transparent; }
     .card p { color: #b7c5e7; }
     .card button { border: 0; border-radius: 999px; padding: 14px 28px; font-weight: 900; font-size: 16px; color: #07112c; background: linear-gradient(135deg, #67e8f9, #c4b5fd); cursor: pointer; }
-    .back { position: fixed; right: 18px; bottom: 84px; z-index: 3; color: #cbd5e1; text-decoration: none; background: #0f172acc; border: 1px solid #64748b; padding: 10px 14px; border-radius: 999px; }
-    .pause { position: fixed; right: 18px; top: 66px; z-index: 3; border: 1px solid #64748b; border-radius: 999px; background: #0f172acc; color: white; padding: 10px 14px; }
-    .controls { position: fixed; left: 18px; bottom: 84px; display: flex; gap: 10px; }
-    .controls button { width: 72px; height: 72px; border: 1px solid #94a3b855; border-radius: 18px; background: #0f172acc; color: white; font-size: 14px; font-weight: 900; touch-action: none; user-select: none; box-shadow: 0 8px 28px #020617; }
+    .top-home { position: fixed; left: 18px; top: 16px; z-index: 4; color: #cbd5e1; text-decoration: none; background: #0f172acc; border: 1px solid #64748b; padding: 10px 14px; border-radius: 999px; }
+    .controls { position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 5; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 8px; width: min(680px, calc(100% - 24px)); padding: 10px; border: 1px solid #93c5fd55; border-radius: 22px; background: #0f172aeF; box-shadow: 0 10px 32px #020617cc; backdrop-filter: blur(10px); }
+    .controls button, .controls select { min-width: 56px; height: 52px; border: 1px solid #94a3b855; border-radius: 14px; background: linear-gradient(145deg, #1e293b, #111827); color: white; font: 800 14px system-ui; touch-action: none; user-select: none; }
+    .controls button { padding: 0 12px; cursor: pointer; }
+    .controls button:active { background: #3730a3; transform: scale(.96); }
+    .controls #fire { color: #07112c; border: 0; background: linear-gradient(135deg, #67e8f9, #c4b5fd); }
+    .controls select { min-width: 112px; padding: 0 9px; touch-action: manipulation; }
     .hidden { display: none; }
-    @media (min-width: 700px) { .controls { display: none; } }
+    @media (max-width: 420px) { .controls { gap: 5px; padding: 7px; } .controls button { min-width: 46px; padding: 0 7px; font-size: 12px; } .controls select { min-width: 92px; font-size: 12px; } }
   </style>
 </head>
 <body>
@@ -31,7 +34,6 @@
     <div id="level">LEVEL 1</div>
     <div id="lives">SHIELDS 3</div>
   </div>
-  <button class="pause" id="pause" type="button">Pause</button>
   <div id="menu" class="panel">
     <div class="card">
       <h1>Galaxy Guardian</h1>
@@ -40,17 +42,24 @@
       <p id="best">Best score: 0</p>
     </div>
   </div>
-            <a class="back" href="/">Back Home</a>
-  <div class="controls">
-    <button id="left" type="button" aria-label="Move left">Left</button>
-    <button id="fire" type="button" aria-label="Fire">Fire</button>
-    <button id="right" type="button" aria-label="Move right">Right</button>
+  <a class="top-home" href="/">← Home</a>
+  <div class="controls" aria-label="Game controls">
+    <button id="left" type="button" aria-label="Move left">◀</button>
+    <button id="fire" type="button" aria-label="Fire">FIRE</button>
+    <button id="right" type="button" aria-label="Move right">▶</button>
+    <select id="speedSetting" aria-label="Game speed">
+      <option value="0.75">Slow</option>
+      <option value="1" selected>Normal</option>
+      <option value="1.35">Fast</option>
+    </select>
+    <button id="pause" type="button">Pause</button>
+    <button id="restart" type="button">Restart</button>
   </div>
 
   <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
-    let width, height, dpr, running = false, paused = false, last = 0, spawnTimer = 0, powerTimer = 0;
+    let width, height, dpr, running = false, paused = false, last = 0, spawnTimer = 0, powerTimer = 0, gameSpeed = 1;
     let score = 0, lives = 3, level = 1, combo = 1, comboTimer = 0, rapidFire = 0, shield = 0;
     let bullets = [], enemies = [], powerups = [], particles = [], stars = [];
     const keys = {};
@@ -85,6 +94,7 @@
       powerTimer = 8;
       document.getElementById("menu").classList.add("hidden");
       document.getElementById("pause").textContent = "Pause";
+      gameSpeed = Number(document.getElementById("speedSetting").value);
       updateHud();
     }
 
@@ -135,6 +145,10 @@
     resize();
     document.getElementById("start").addEventListener("click", reset);
     document.getElementById("pause").addEventListener("click", togglePause);
+    document.getElementById("restart").addEventListener("click", reset);
+    document.getElementById("speedSetting").addEventListener("change", event => {
+      gameSpeed = Number(event.target.value);
+    });
     addEventListener("keydown", event => {
       keys[event.key.toLowerCase()] = true;
       if (event.code === "Space") { event.preventDefault(); shoot(); }
@@ -353,7 +367,7 @@
     function loop(time) {
       const dt = Math.min((time - last) / 1000, 0.035) || 0;
       last = time;
-      update(dt);
+      update(dt * gameSpeed);
       draw();
       requestAnimationFrame(loop);
     }
