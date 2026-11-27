@@ -17,12 +17,14 @@
     .card p { color: #b7c5e7; }
     .card button { border: 0; border-radius: 999px; padding: 14px 28px; font-weight: 900; font-size: 16px; color: #07112c; background: linear-gradient(135deg, #67e8f9, #c4b5fd); cursor: pointer; }
     .top-home { position: fixed; left: 18px; top: 16px; z-index: 4; color: #cbd5e1; text-decoration: none; background: #0f172acc; border: 1px solid #64748b; padding: 10px 14px; border-radius: 999px; }
-    .controls { position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 5; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 8px; width: min(680px, calc(100% - 24px)); padding: 10px; border: 1px solid #93c5fd55; border-radius: 22px; background: #0f172aeF; box-shadow: 0 10px 32px #020617cc; backdrop-filter: blur(10px); }
-    .controls button, .controls select { min-width: 56px; height: 52px; border: 1px solid #94a3b855; border-radius: 14px; background: linear-gradient(145deg, #1e293b, #111827); color: white; font: 800 14px system-ui; touch-action: none; user-select: none; }
-    .controls button { padding: 0 12px; cursor: pointer; }
+    .controls { position: fixed; left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 8; transform: translateX(-50%); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: center; gap: 8px; width: min(720px, calc(100% - 24px)); padding: 10px; border: 1px solid #93c5fd88; border-radius: 20px; background: #0b1224f5; box-shadow: 0 10px 32px #020617dd; backdrop-filter: blur(10px); }
+    .controls button, .controls select { min-width: 0; width: 100%; height: 50px; border: 1px solid #94a3b877; border-radius: 13px; background: linear-gradient(145deg, #26354d, #111827); color: white; font: 800 14px system-ui; touch-action: manipulation; user-select: none; }
+    .controls button { padding: 0 6px; cursor: pointer; }
     .controls button:active { background: #3730a3; transform: scale(.96); }
     .controls #fire { color: #07112c; border: 0; background: linear-gradient(135deg, #67e8f9, #c4b5fd); }
-    .controls select { min-width: 112px; padding: 0 9px; touch-action: manipulation; }
+    .controls select { padding: 0 8px; }
+    .play-hint { position: fixed; left: 50%; bottom: calc(max(10px, env(safe-area-inset-bottom)) + 76px); z-index: 7; transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px); padding: 8px 14px; border: 1px solid #64748b88; border-radius: 999px; background: #0f172aeF; color: #e2e8f0; text-align: center; font-size: 13px; font-weight: 700; }
+    @media (max-width: 560px) { .controls { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 8px; } .controls button, .controls select { height: 44px; font-size: 12px; } .play-hint { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 132px); font-size: 11px; } }
     .hidden { display: none; }
     @media (max-width: 420px) { .controls { gap: 5px; padding: 7px; } .controls button { min-width: 46px; padding: 0 7px; font-size: 12px; } .controls select { min-width: 92px; font-size: 12px; } }
   </style>
@@ -43,17 +45,18 @@
     </div>
   </div>
   <a class="top-home" href="/">← Home</a>
+  <div class="play-hint">HOW TO PLAY: ◀ / ▶ to move · FIRE to shoot · P to pause</div>
   <div class="controls" aria-label="Game controls">
-    <button id="left" type="button" aria-label="Move left">◀</button>
+    <button id="left" type="button" aria-label="Move left">◀ LEFT</button>
     <button id="fire" type="button" aria-label="Fire">FIRE</button>
-    <button id="right" type="button" aria-label="Move right">▶</button>
+    <button id="right" type="button" aria-label="Move right">RIGHT ▶</button>
     <select id="speedSetting" aria-label="Game speed">
       <option value="0.75">Slow</option>
       <option value="1" selected>Normal</option>
       <option value="1.35">Fast</option>
     </select>
-    <button id="pause" type="button">Pause</button>
-    <button id="restart" type="button">Restart</button>
+    <button id="pause" type="button">PAUSE</button>
+    <button id="restart" type="button">RESTART</button>
   </div>
 
   <script>
@@ -93,7 +96,7 @@
       spawnTimer = 0;
       powerTimer = 8;
       document.getElementById("menu").classList.add("hidden");
-      document.getElementById("pause").textContent = "Pause";
+      document.getElementById("pause").textContent = "PAUSE";
       gameSpeed = Number(document.getElementById("speedSetting").value);
       updateHud();
     }
@@ -138,7 +141,7 @@
     function togglePause() {
       if (!running) return;
       paused = !paused;
-      document.getElementById("pause").textContent = paused ? "Resume" : "Pause";
+      document.getElementById("pause").textContent = paused ? "RESUME" : "PAUSE";
     }
 
     addEventListener("resize", resize);
