@@ -108,7 +108,7 @@ public final class MainActivity extends Activity {
     }
 
     private void enqueueCameraPermission(PermissionRequest request) {
-        if (!isTrustedOrigin(request.getOrigin())) {
+        if (!isTrustedOrigin(request.getOrigin().toString())) {
             request.deny();
             return;
         }
@@ -124,7 +124,7 @@ public final class MainActivity extends Activity {
             request.deny();
             return;
         }
-        permissionQueue.add(new PendingWebPermission(request, request.getOrigin(), null,
+        permissionQueue.add(new PendingWebPermission(request, request.getOrigin().toString(), null,
                 resources, needed.toArray(new String[0])));
         processPermissionQueue();
     }
