@@ -115,6 +115,7 @@
     #cameraOverlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
     .camera-guide { position: absolute; top: 16px; left: 50%; width: min(620px,calc(100% - 24px)); transform: translateX(-50%); padding: 12px 16px; border: 1px solid #e2e8f066; border-radius: 16px; color: white; background: #020617d9; text-align: center; text-shadow: 0 1px 5px #000; }
     .camera-guide strong { color: #67e8f9; }
+    .camera-moon { display: block; margin-top: 6px; color: #e9d5ff; font-weight: 700; }
     .camera-close { position: absolute; right: 16px; bottom: max(16px,env(safe-area-inset-bottom)); z-index: 2; }
     .camera-note { display: block; margin-top: 5px; color: #cbd5e1; font-size: 12px; }
 
@@ -215,7 +216,7 @@
   <section id="cameraView" class="camera-view" hidden aria-label="Camera sky view">
     <video id="cameraVideo" autoplay playsinline muted></video>
     <canvas id="cameraOverlay" aria-label="Calculated planet directions shown with detailed planet icons"></canvas>
-    <div class="camera-guide"><strong>Planet sky guide</strong><br><span id="cameraStatus">Point your phone slowly across the sky.</span><span class="camera-note">Markers show calculated directions, not planets detected by the camera. Daylight, clouds and buildings can hide planets.</span></div>
+    <div class="camera-guide"><strong>Planet sky guide</strong><br><span id="cameraStatus">Point your phone slowly across the sky.</span><span class="camera-moon" id="cameraMoonInfo">Moon location appears after camera and location access.</span><span class="camera-note">Markers show calculated sky directions, not objects detected by the camera. Daylight, clouds and buildings can hide them.</span></div>
     <button id="closeCamera" class="camera-close" type="button">Close camera</button>
   </section>
   <footer>Positions calculated in your browser with Astronomy Engine (MIT-licensed). They are approximate ephemeris results for education, not navigation.</footer>
@@ -281,6 +282,12 @@
           return result;
         });
         cameraPositions = positions.filter(planet => Number.isFinite(planet.azimuth) && Number.isFinite(planet.altitude));
+        if (observer) {
+          const moonEquatorial = Astronomy.Equator(Astronomy.Body.Moon, now, observer, true, true);
+          const moonHorizontal = Astronomy.Horizon(now, observer, moonEquatorial.ra, moonEquatorial.dec, "normal");
+          cameraPositions.push({ name: "Moon", body: "Moon", color: "#dce4f2", azimuth: moonHorizontal.azimuth, altitude: moonHorizontal.altitude });
+        }
+        updateMoonReadout();
         document.getElementById("status").textContent = "Live positions · updated " + now.toLocaleTimeString();
         document.getElementById("localTime").textContent = now.toLocaleString();
         document.getElementById("message").textContent = "Tap a planet on the map or select its card for current heliocentric distance and longitude.";
@@ -350,6 +357,19 @@
       drawCameraOverlay();
     }
 
+    function updateMoonReadout() {
+      const output = document.getElementById("cameraMoonInfo");
+      if (!output) return;
+      const moon = cameraPositions.find(target => target.name === "Moon");
+      if (!observer || !moon) {
+        output.textContent = "Moon location appears after camera and location access.";
+        return;
+      }
+      const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+      const compass = directions[Math.round(moon.azimuth / 45) % directions.length];
+      output.textContent = "Moon location: altitude " + moon.altitude.toFixed(1) + "° · azimuth " + moon.azimuth.toFixed(1) + "° " + compass + " · " + (moon.altitude >= 0 ? "above" : "below") + " horizon";
+    }
+
     function drawPlanetIcon(planet, x, y, radius) {
       cameraCtx.save();
       cameraCtx.shadowColor = planet.color;
@@ -411,6 +431,19 @@
           cameraCtx.beginPath();
           cameraCtx.ellipse(x + radius * 0.38, y + radius * 0.18, radius * 0.2, radius * 0.1, -0.15, 0, Math.PI * 2);
           cameraCtx.fill();
+        }
+      } else if (planet.name === "Moon") {
+        const craters = [[-0.42,-0.38,0.17],[-0.06,-0.44,0.12],[0.38,-0.28,0.2],[0.12,0.02,0.24],[-0.39,0.28,0.19],[0.44,0.43,0.12],[-0.02,0.53,0.11]];
+        for (const crater of craters) {
+          cameraCtx.fillStyle = "#596273aa";
+          cameraCtx.beginPath();
+          cameraCtx.ellipse(x + crater[0] * radius, y + crater[1] * radius, crater[2] * radius, crater[2] * radius * 0.72, -0.3, 0, Math.PI * 2);
+          cameraCtx.fill();
+          cameraCtx.strokeStyle = "#ffffff77";
+          cameraCtx.lineWidth = Math.max(0.7, radius * 0.06);
+          cameraCtx.beginPath();
+          cameraCtx.arc(x + crater[0] * radius - crater[2] * radius * 0.12, y + crater[1] * radius - crater[2] * radius * 0.1, crater[2] * radius * 0.78, Math.PI * 1.05, Math.PI * 1.9);
+          cameraCtx.stroke();
         }
       } else if (planet.name === "Mercury" || planet.name === "Mars") {
         cameraCtx.fillStyle = planet.name === "Mars" ? "#7f1d1d99" : "#57534e99";
