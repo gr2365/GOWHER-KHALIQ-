@@ -105,6 +105,19 @@
     .planet-name { font-weight: 800; }
     .planet-position { color: #a5b4fc; font-size: 13px; }
     #message { padding: 14px; color: #fde68a; text-align: center; }
+
+    .camera-launch { margin: 14px auto 18px; text-align: center; }
+    .camera-launch button, .camera-close { padding: 12px 18px; border: 1px solid #67e8f9aa; border-radius: 999px; color: #07111f; background: linear-gradient(135deg,#67e8f9,#c4b5fd); font: 800 15px system-ui; cursor: pointer; }
+    .camera-launch p { margin: 7px 10px 0; color: #94a3b8; font-size: 12px; }
+    .camera-view[hidden] { display: none; }
+    .camera-view { position: fixed; inset: 0; z-index: 20; overflow: hidden; background: #020617; }
+    .camera-view video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    #cameraOverlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .camera-guide { position: absolute; top: 16px; left: 50%; width: min(620px,calc(100% - 24px)); transform: translateX(-50%); padding: 12px 16px; border: 1px solid #e2e8f066; border-radius: 16px; color: white; background: #020617d9; text-align: center; text-shadow: 0 1px 5px #000; }
+    .camera-guide strong { color: #67e8f9; }
+    .camera-close { position: absolute; right: 16px; bottom: max(16px,env(safe-area-inset-bottom)); z-index: 2; }
+    .camera-note { display: block; margin-top: 5px; color: #cbd5e1; font-size: 12px; }
+
     footer { padding: 16px; color: #94a3b8; text-align: center; font-size: 13px; }
     @media (max-width: 620px) {
       header { padding-top: 64px; }
@@ -121,6 +134,10 @@
     <p>See where the planets are around the Sun right now. Select a planet to inspect its current position.</p>
     <div class="status"><span class="pulse"></span><span id="status">Loading astronomical ephemeris…</span></div>
   </header>
+    <div class="camera-launch">
+      <button id="openCamera" type="button">📷 Open camera sky view</button>
+      <p>Optional: uses this device’s camera, location and compass. Location stays on this device.</p>
+    </div>
   <main>
     <section class="tracker" aria-label="Live solar system map">
       <div class="map-wrap"><canvas id="map" aria-label="Map of current planet positions around the Sun"></canvas>
@@ -131,6 +148,12 @@
     <section class="planet-details" id="planetList" aria-label="Planet live positions"></section>
     <p id="message" role="status">Loading planet positions…</p>
   </main>
+  <section id="cameraView" class="camera-view" hidden aria-label="Camera sky view">
+    <video id="cameraVideo" autoplay playsinline muted></video>
+    <canvas id="cameraOverlay" aria-label="Calculated planet direction markers"></canvas>
+    <div class="camera-guide"><strong>Planet sky guide</strong><br><span id="cameraStatus">Point your phone slowly across the sky.</span><span class="camera-note">Markers show calculated directions, not planets detected by the camera. Daylight, clouds and buildings can hide planets.</span></div>
+    <button id="closeCamera" class="camera-close" type="button">Close camera</button>
+  </section>
   <footer>Positions calculated in your browser with Astronomy Engine (MIT-licensed). They are approximate ephemeris results for education, not navigation.</footer>
   <script src="/astronomy-engine.browser.min.js"></script>
   <script>
@@ -147,8 +170,15 @@
     const canvas = document.getElementById("map");
     const ctx = canvas.getContext("2d");
     let positions = [];
+    let cameraPositions = [];
     let selected = "";
     let width = 0, height = 0, pixelRatio = 1;
+    let cameraStream = null;
+    let observer = null;
+    let cameraOrientation = null;
+    const cameraVideo = document.getElementById("cameraVideo");
+    const cameraCanvas = document.getElementById("cameraOverlay");
+    const cameraCtx = cameraCanvas.getContext("2d");
     const obliquity = 23.4392911 * Math.PI / 180;
 
     function resizeCanvas() {
@@ -177,13 +207,22 @@
           const distance = Math.sqrt(vector.x ** 2 + vector.y ** 2 + vector.z ** 2);
           let longitude = Math.atan2(eclipticY, vector.x) * 180 / Math.PI;
           if (longitude < 0) longitude += 360;
-          return { ...planet, distance, longitude };
+          const result = { ...planet, distance, longitude };
+          if (observer && planet.body !== "Earth") {
+            const equatorial = Astronomy.Equator(Astronomy.Body[planet.body], now, observer, true, true);
+            const horizontal = Astronomy.Horizon(now, observer, equatorial.ra, equatorial.dec, "normal");
+            result.azimuth = horizontal.azimuth;
+            result.altitude = horizontal.altitude;
+          }
+          return result;
         });
+        cameraPositions = positions.filter(planet => Number.isFinite(planet.azimuth) && Number.isFinite(planet.altitude));
         document.getElementById("status").textContent = "Live positions · updated " + now.toLocaleTimeString();
         document.getElementById("localTime").textContent = now.toLocaleString();
         document.getElementById("message").textContent = "Tap a planet on the map or select its card for current heliocentric distance and longitude.";
         renderPlanetCards();
         draw();
+        drawCameraOverlay();
       } catch (error) {
         console.error("Could not calculate planet positions:", error);
         document.getElementById("status").textContent = "Unable to calculate live positions.";
@@ -207,7 +246,8 @@
         name.textContent = planet.name + " — " + planet.info;
         const position = document.createElement("span");
         position.className = "planet-position";
-        position.textContent = planet.distance.toFixed(3) + " AU from Sun · " + planet.longitude.toFixed(1) + "° ecliptic longitude";
+        position.textContent = planet.distance.toFixed(3) + " AU from Sun · " + planet.longitude.toFixed(1) + "° ecliptic longitude" +
+          (Number.isFinite(planet.altitude) ? " · sky " + (planet.altitude >= 0 ? "above" : "below") + " horizon" : "");
         card.append(icon, name, position);
         card.addEventListener("click", () => {
           selected = selected === planet.name ? "" : planet.name;
@@ -217,6 +257,144 @@
         list.appendChild(card);
       });
     }
+
+
+    function resizeCameraCanvas() {
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      cameraCanvas.width = Math.round(window.innerWidth * ratio);
+      cameraCanvas.height = Math.round(window.innerHeight * ratio);
+      cameraCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      drawCameraOverlay();
+    }
+
+    function updateDeviceOrientation(event) {
+      if (!Number.isFinite(event.alpha) || !Number.isFinite(event.beta) || !Number.isFinite(event.gamma)) {
+        return;
+      }
+      const toRadians = Math.PI / 180;
+      const beta = event.beta * toRadians;
+      const gamma = event.gamma * toRadians;
+      const compassHeading = Number.isFinite(event.webkitCompassHeading)
+        ? event.webkitCompassHeading
+        : (360 - event.alpha + 360) % 360;
+      const cameraAltitude = Math.asin(Math.max(-1, Math.min(1, -Math.cos(beta) * Math.cos(gamma)))) / toRadians;
+      cameraOrientation = { heading: compassHeading, altitude: cameraAltitude, absolute: event.absolute === true || Number.isFinite(event.webkitCompassHeading) };
+      const accuracy = cameraOrientation.absolute ? "Compass ready" : "Compass may need calibration";
+      document.getElementById("cameraStatus").textContent = accuracy + " · slowly point the phone around the sky.";
+      drawCameraOverlay();
+    }
+
+    function drawCameraOverlay() {
+      if (document.getElementById("cameraView").hidden || !cameraPositions.length) return;
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      cameraCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      if (!cameraOrientation) {
+        document.getElementById("cameraStatus").textContent = "Allow compass/motion access, then move your phone slowly.";
+        return;
+      }
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const focalLength = viewportWidth / (2 * Math.tan(35 * Math.PI / 180));
+      const wrapAngle = value => ((value + 540) % 360) - 180;
+      let markers = 0;
+      for (const planet of cameraPositions) {
+        if (planet.altitude < 0) continue;
+        const horizontalOffset = wrapAngle(planet.azimuth - cameraOrientation.heading);
+        const verticalOffset = planet.altitude - cameraOrientation.altitude;
+        if (Math.abs(horizontalOffset) > 65 || Math.abs(verticalOffset) > 55) continue;
+        const x = viewportWidth / 2 + Math.tan(horizontalOffset * Math.PI / 180) * focalLength;
+        const y = viewportHeight / 2 - Math.tan(verticalOffset * Math.PI / 180) * focalLength;
+        if (x < 32 || x > viewportWidth - 32 || y < 70 || y > viewportHeight - 55) continue;
+        cameraCtx.save();
+        cameraCtx.strokeStyle = planet.color;
+        cameraCtx.fillStyle = planet.color;
+        cameraCtx.shadowColor = planet.color;
+        cameraCtx.shadowBlur = 18;
+        cameraCtx.lineWidth = 2;
+        cameraCtx.beginPath();
+        cameraCtx.arc(x, y, 11, 0, Math.PI * 2);
+        cameraCtx.stroke();
+        cameraCtx.beginPath();
+        cameraCtx.arc(x, y, 3, 0, Math.PI * 2);
+        cameraCtx.fill();
+        cameraCtx.shadowBlur = 0;
+        cameraCtx.font = "700 14px system-ui";
+        cameraCtx.textAlign = "center";
+        cameraCtx.lineWidth = 4;
+        cameraCtx.strokeStyle = "#020617";
+        cameraCtx.strokeText(planet.name, x, y - 17);
+        cameraCtx.fillStyle = "white";
+        cameraCtx.fillText(planet.name, x, y - 17);
+        cameraCtx.restore();
+        markers++;
+      }
+      if (markers === 0) {
+        document.getElementById("cameraStatus").textContent = "No planet marker in this camera direction. Turn slowly; planets below the horizon are not shown.";
+      } else {
+        document.getElementById("cameraStatus").textContent = markers + " planet direction" + (markers === 1 ? "" : "s") + " in view · " + (cameraOrientation.absolute ? "compass active" : "compass may need calibration");
+      }
+    }
+
+    async function openCameraSkyView() {
+      const status = document.getElementById("cameraStatus");
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !navigator.geolocation) {
+        status.textContent = "This browser needs camera and location support. Open the site in an up-to-date browser over HTTPS.";
+        document.getElementById("cameraView").hidden = false;
+        return;
+      }
+
+      let orientationPermission = Promise.resolve("granted");
+      if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+        orientationPermission = DeviceOrientationEvent.requestPermission().catch(() => "denied");
+      }
+      const cameraRequest = navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+      const locationRequest = new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true, timeout: 15000, maximumAge: 60000
+      }));
+      status.textContent = "Requesting camera and location permission…";
+      document.getElementById("cameraView").hidden = false;
+      const results = await Promise.allSettled([cameraRequest, locationRequest, orientationPermission]);
+      const cameraResult = results[0];
+      const locationResult = results[1];
+      if (cameraResult.status === "rejected" || locationResult.status === "rejected") {
+        if (cameraResult.status === "fulfilled") cameraResult.value.getTracks().forEach(track => track.stop());
+        const failure = cameraResult.status === "rejected" ? cameraResult.reason : locationResult.reason;
+        console.warn("Camera sky view permissions were not granted:", failure);
+        status.textContent = "Camera and location access are needed. Allow them in your browser’s site settings, then try again.";
+        return;
+      }
+
+      cameraStream = cameraResult.value;
+      cameraVideo.srcObject = cameraStream;
+      await cameraVideo.play();
+      const coordinates = locationResult.value.coords;
+      observer = new Astronomy.Observer(coordinates.latitude, coordinates.longitude, coordinates.altitude || 0);
+      const orientationGranted = results[2].status === "fulfilled" && results[2].value === "granted";
+      if (orientationGranted) {
+        window.addEventListener("deviceorientation", updateDeviceOrientation, true);
+        window.addEventListener("deviceorientationabsolute", updateDeviceOrientation, true);
+      } else {
+        status.textContent = "Camera is on. Allow motion/compass access to place markers over the view.";
+      }
+      updatePositions();
+      resizeCameraCanvas();
+    }
+
+    function closeCameraSkyView() {
+      if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+      cameraVideo.srcObject = null;
+      observer = null;
+      cameraOrientation = null;
+      window.removeEventListener("deviceorientation", updateDeviceOrientation, true);
+      window.removeEventListener("deviceorientationabsolute", updateDeviceOrientation, true);
+      document.getElementById("cameraView").hidden = true;
+      updatePositions();
+    }
+
+    document.getElementById("openCamera").addEventListener("click", openCameraSkyView);
+    document.getElementById("closeCamera").addEventListener("click", closeCameraSkyView);
+    window.addEventListener("resize", resizeCameraCanvas);
 
     function planetPoint(planet) {
       const cx = width / 2;
