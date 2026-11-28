@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore live calculated positions of the planets using current astronomical ephemerides.">
+  <title>Live Planet Tracker | Gowher Khaliq</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: #e2e8f0;
+      background: radial-gradient(ellipse at 50% 35%, #172554 0, #080d20 55%, #02040b 100%);
+      font: 15px/1.5 system-ui, sans-serif;
+    }
+    header {
+      padding: 24px 18px 16px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 8px 0;
+      color: #e0e7ff;
+      font-size: clamp(1.7rem, 5vw, 2.8rem);
+    }
+    header p { margin: 4px auto; max-width: 720px; color: #cbd5e1; }
+    .home {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      padding: 9px 14px;
+      border: 1px solid #64748b;
+      border-radius: 999px;
+      color: white;
+      background: #0f172acc;
+      text-decoration: none;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 7px 12px;
+      border: 1px solid #22c55e66;
+      border-radius: 999px;
+      color: #bbf7d0;
+      background: #052e1688;
+      font-size: 13px;
+    }
+    .pulse { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 12px #4ade80; }
+    main { width: min(1120px, calc(100% - 24px)); margin: 0 auto 30px; }
+    .tracker {
+      overflow: hidden;
+      border: 1px solid #64748b66;
+      border-radius: 22px;
+      background: #080d1bd9;
+      box-shadow: 0 20px 70px #0008;
+    }
+    .map-wrap { position: relative; min-height: 370px; height: min(62vh, 590px); }
+    canvas { display: block; width: 100%; height: 100%; }
+    .map-note {
+      position: absolute;
+      right: 12px;
+      bottom: 10px;
+      max-width: 430px;
+      color: #cbd5e1;
+      background: #020617bb;
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: 12px;
+      text-align: right;
+    }
+    .readout {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px 16px;
+      padding: 12px 16px;
+      border-top: 1px solid #47556988;
+      color: #cbd5e1;
+    }
+    .readout strong { color: #67e8f9; }
+    .planet-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .planet-card {
+      display: grid;
+      grid-template-columns: 35px 1fr;
+      gap: 0 9px;
+      padding: 13px;
+      border: 1px solid #64748b66;
+      border-radius: 15px;
+      color: #e2e8f0;
+      background: #0f172add;
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+    }
+    .planet-card:hover, .planet-card[aria-pressed="true"] { border-color: #67e8f9; background: #172554; }
+    .planet-icon { grid-row: span 2; align-self: center; width: 24px; height: 24px; border-radius: 50%; box-shadow: 0 0 16px currentColor; }
+    .planet-name { font-weight: 800; }
+    .planet-position { color: #a5b4fc; font-size: 13px; }
+    #message { padding: 14px; color: #fde68a; text-align: center; }
+    footer { padding: 16px; color: #94a3b8; text-align: center; font-size: 13px; }
+    @media (max-width: 620px) {
+      header { padding-top: 64px; }
+      .home { top: 12px; left: 12px; }
+      .map-wrap { height: 52vh; min-height: 330px; }
+      .map-note { left: 10px; right: 10px; max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="home" href="/">← Home</a>
+  <header>
+    <h1>🪐 Live Planet Tracker</h1>
+    <p>See where the planets are around the Sun right now. Select a planet to inspect its current position.</p>
+    <div class="status"><span class="pulse"></span><span id="status">Loading astronomical ephemeris…</span></div>
+  </header>
+  <main>
+    <section class="tracker" aria-label="Live solar system map">
+      <div class="map-wrap"><canvas id="map" aria-label="Map of current planet positions around the Sun"></canvas>
+        <div class="map-note">Heliocentric ecliptic view · display distances use a compressed scale, not true size or distance.</div>
+      </div>
+      <div class="readout"><span>Current time: <strong id="localTime">—</strong></span><span>Ephemeris refreshes every 10 seconds</span></div>
+    </section>
+    <section class="planet-details" id="planetList" aria-label="Planet live positions"></section>
+    <p id="message" role="status">Loading planet positions…</p>
+  </main>
+  <footer>Positions calculated in your browser with Astronomy Engine. They are approximate ephemeris results for education, not navigation.</footer>
+  <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+  <script>
+    const planets = [
+      { name: "Mercury", body: "Mercury", color: "#b9b2a7", info: "Closest planet to the Sun." },
+      { name: "Venus", body: "Venus", color: "#f6d365", info: "Second planet from the Sun." },
+      { name: "Earth", body: "Earth", color: "#38bdf8", info: "Our home planet." },
+      { name: "Mars", body: "Mars", color: "#fb7185", info: "The Red Planet." },
+      { name: "Jupiter", body: "Jupiter", color: "#d6a77a", info: "Largest planet in the Solar System." },
+      { name: "Saturn", body: "Saturn", color: "#fde68a", info: "The ringed gas giant." },
+      { name: "Uranus", body: "Uranus", color: "#67e8f9", info: "An ice giant with an extreme axial tilt." },
+      { name: "Neptune", body: "Neptune", color: "#4f83ff", info: "The most distant recognized planet." }
+    ];
+    const canvas = document.getElementById("map");
+    const ctx = canvas.getContext("2d");
+    let positions = [];
+    let selected = "";
+    let width = 0, height = 0, pixelRatio = 1;
+    const obliquity = 23.4392911 * Math.PI / 180;
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      width = rect.width;
+      height = rect.height;
+      canvas.width = Math.round(width * pixelRatio);
+      canvas.height = Math.round(height * pixelRatio);
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      draw();
+    }
+
+    function updatePositions() {
+      if (!window.Astronomy || !Astronomy.HelioVector || !Astronomy.Body) {
+        document.getElementById("status").textContent = "Planet data library unavailable — try refreshing.";
+        document.getElementById("message").textContent = "Could not load the ephemeris library. Check your connection and refresh this page.";
+        return;
+      }
+
+      try {
+        const now = new Date();
+        positions = planets.map(planet => {
+          const vector = Astronomy.HelioVector(now, Astronomy.Body[planet.body]);
+          const eclipticY = vector.y * Math.cos(obliquity) + vector.z * Math.sin(obliquity);
+          const distance = Math.sqrt(vector.x ** 2 + vector.y ** 2 + vector.z ** 2);
+          let longitude = Math.atan2(eclipticY, vector.x) * 180 / Math.PI;
+          if (longitude < 0) longitude += 360;
+          return { ...planet, distance, longitude };
+        });
+        document.getElementById("status").textContent = "Live positions · updated " + now.toLocaleTimeString();
+        document.getElementById("localTime").textContent = now.toLocaleString();
+        document.getElementById("message").textContent = "Tap a planet on the map or select its card for current heliocentric distance and longitude.";
+        renderPlanetCards();
+        draw();
+      } catch (error) {
+        console.error("Could not calculate planet positions:", error);
+        document.getElementById("status").textContent = "Unable to calculate live positions.";
+        document.getElementById("message").textContent = "The ephemeris calculation failed. Please refresh and try again.";
+      }
+    }
+
+    function renderPlanetCards() {
+      const list = document.getElementById("planetList");
+      list.replaceChildren();
+      positions.forEach(planet => {
+        const card = document.createElement("button");
+        card.className = "planet-card";
+        card.type = "button";
+        card.setAttribute("aria-pressed", String(selected === planet.name));
+        const icon = document.createElement("span");
+        icon.className = "planet-icon";
+        icon.style.background = planet.color;
+        const name = document.createElement("span");
+        name.className = "planet-name";
+        name.textContent = planet.name + " — " + planet.info;
+        const position = document.createElement("span");
+        position.className = "planet-position";
+        position.textContent = planet.distance.toFixed(3) + " AU from Sun · " + planet.longitude.toFixed(1) + "° ecliptic longitude";
+        card.append(icon, name, position);
+        card.addEventListener("click", () => {
+          selected = selected === planet.name ? "" : planet.name;
+          renderPlanetCards();
+          draw();
+        });
+        list.appendChild(card);
+      });
+    }
+
+    function planetPoint(planet) {
+      const cx = width / 2;
+      const cy = height / 2;
+      const maxRadius = Math.max(50, Math.min(width * 0.43, height * 0.43));
+      const normalized = Math.log1p(planet.distance) / Math.log1p(30);
+      const radius = 30 + normalized * (maxRadius - 30);
+      const angle = planet.longitude * Math.PI / 180;
+      return { x: cx + Math.cos(angle) * radius, y: cy - Math.sin(angle) * radius, radius: Math.max(5, Math.min(12, 4 + Math.log1p(planet.distance))) };
+    }
+
+    function draw() {
+      if (!width || !height) return;
+      ctx.clearRect(0, 0, width, height);
+      const cx = width / 2;
+      const cy = height / 2;
+      for (let i = 1; i <= 4; i++) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, (Math.min(width * 0.43, height * 0.43) * i) / 4, 0, Math.PI * 2);
+        ctx.strokeStyle = "#94a3b822";
+        ctx.setLineDash([3, 7]);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      const sunGlow = ctx.createRadialGradient(cx, cy, 2, cx, cy, 25);
+      sunGlow.addColorStop(0, "#fff7b2");
+      sunGlow.addColorStop(0.35, "#facc15");
+      sunGlow.addColorStop(1, "#f9731600");
+      ctx.fillStyle = sunGlow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 25, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff7b2";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = "12px system-ui";
+      ctx.fillStyle = "#fde68a";
+      ctx.textAlign = "center";
+      ctx.fillText("SUN", cx, cy + 40);
+
+      positions.forEach(planet => {
+        const point = planetPoint(planet);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(point.x, point.y);
+        ctx.strokeStyle = selected === planet.name ? planet.color + "aa" : "#94a3b833";
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.radius + (selected === planet.name ? 5 : 0), 0, Math.PI * 2);
+        ctx.fillStyle = planet.color + "33";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.radius, 0, Math.PI * 2);
+        ctx.fillStyle = planet.color;
+        ctx.shadowBlur = selected === planet.name ? 22 : 12;
+        ctx.shadowColor = planet.color;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "12px system-ui";
+        ctx.textAlign = point.x > cx ? "left" : "right";
+        ctx.fillText(planet.name, point.x + (point.x > cx ? point.radius + 5 : -point.radius - 5), point.y + 4);
+      });
+    }
+
+    canvas.addEventListener("click", event => {
+      if (!positions.length) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      let nearest = null;
+      let nearestDistance = Infinity;
+      positions.forEach(planet => {
+        const point = planetPoint(planet);
+        const distance = Math.hypot(point.x - x, point.y - y);
+        if (distance < nearestDistance) { nearest = planet; nearestDistance = distance; }
+      });
+      if (nearest && nearestDistance < 34) {
+        selected = selected === nearest.name ? "" : nearest.name;
+        renderPlanetCards();
+        draw();
+      }
+    });
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    updatePositions();
+    window.setInterval(updatePositions, 10000);
+  </script>
+</body>
+</html>
