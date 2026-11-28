@@ -18,9 +18,9 @@ import android.widget.Toast;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Iterator;
 import java.util.Set;
 
 public final class MainActivity extends Activity {
@@ -182,7 +182,10 @@ public final class MainActivity extends Activity {
             processPermissionQueue();
             return;
         }
-        permissionQueue.removeIf(pending -> pending.request == request);
+        Iterator<PendingWebPermission> iterator = permissionQueue.iterator();
+        while (iterator.hasNext()) {
+            if (iterator.next().request == request) iterator.remove();
+        }
     }
 
     @Override
