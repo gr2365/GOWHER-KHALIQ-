@@ -106,7 +106,11 @@
         await result.user.updateProfile({ displayName: name });
         status.style.color = '#166534';
         status.textContent = 'Account created successfully.';
-        setTimeout(function () { window.location.href = '/'; }, 800);
+        setTimeout(function () {
+          const redirect = new URLSearchParams(window.location.search).get('redirect');
+          const target = redirect ? new URL(redirect, window.location.origin) : new URL('/', window.location.origin);
+          window.location.href = target.origin === window.location.origin ? target.pathname + target.search + target.hash : '/';
+        }, 800);
       } catch (error) {
         status.style.color = '#b91c1c';
         status.textContent = error.code === 'auth/email-already-in-use'
