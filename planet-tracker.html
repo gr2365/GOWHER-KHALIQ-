@@ -172,7 +172,7 @@
       try {
         const now = new Date();
         positions = planets.map(planet => {
-          const vector = Astronomy.HelioVector(now, Astronomy.Body[planet.body]);
+          const vector = Astronomy.HelioVector(Astronomy.Body[planet.body], now);
           const eclipticY = vector.y * Math.cos(obliquity) + vector.z * Math.sin(obliquity);
           const distance = Math.sqrt(vector.x ** 2 + vector.y ** 2 + vector.z ** 2);
           let longitude = Math.atan2(eclipticY, vector.x) * 180 / Math.PI;
