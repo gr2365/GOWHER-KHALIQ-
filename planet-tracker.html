@@ -514,9 +514,9 @@
         markers++;
       }
       if (markers === 0) {
-        document.getElementById("cameraStatus").textContent = "No planet marker in this camera direction. Turn slowly; planets below the horizon are not shown.";
+        document.getElementById("cameraStatus").textContent = "No planet or Moon marker in this camera direction. Turn slowly; bodies below the horizon are not shown.";
       } else {
-        document.getElementById("cameraStatus").textContent = markers + " planet direction" + (markers === 1 ? "" : "s") + " in view · " + (cameraOrientation.absolute ? "compass active" : "compass may need calibration");
+        document.getElementById("cameraStatus").textContent = markers + " sky marker" + (markers === 1 ? "" : "s") + " in view · " + (cameraOrientation.absolute ? "compass active" : "compass may need calibration");
       }
     }
 
