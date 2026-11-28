@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Request access to expanded universe learning notes.">
+  <title>Universe Pro Notes | Gowher Khaliq</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: #e2e8f0; background: radial-gradient(ellipse at 50% 0,#172554,#070b1c 60%,#02040b); font: 16px/1.65 system-ui,sans-serif; }
+    header { padding: 38px 18px 22px; text-align: center; }
+    header h1 { margin: 0; color: #e0e7ff; font-size: clamp(2rem,6vw,3rem); }
+    header p { max-width: 720px; margin: 8px auto; color: #cbd5e1; }
+    main { width: min(840px,calc(100% - 24px)); margin: 0 auto 36px; }
+    .panel { margin: 16px 0; padding: 22px; border: 1px solid #64748b77; border-radius: 18px; background: #0f172add; box-shadow: 0 16px 48px #0005; }
+    h2 { margin: 0 0 10px; color: #67e8f9; }
+    .muted { color: #aebbd2; }
+    .state { padding: 13px 15px; border-radius: 12px; background: #111827; white-space: pre-wrap; }
+    .error { color: #fecaca; border: 1px solid #f8717188; }
+    .success { color: #bbf7d0; border: 1px solid #4ade8088; }
+    .info { color: #dbeafe; border: 1px solid #60a5fa77; }
+    label { display: block; margin: 14px 0 6px; font-weight: 700; }
+    input { width: 100%; padding: 12px; border: 1px solid #64748b; border-radius: 10px; color: white; background: #020617; font: inherit; }
+    button,.button { display: inline-block; margin-top: 14px; padding: 11px 16px; border: 0; border-radius: 999px; color: #07111f; background: linear-gradient(135deg,#67e8f9,#c4b5fd); font: 800 15px system-ui; text-decoration: none; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: wait; }
+    .hidden { display: none !important; }
+    #proContent section { margin: 18px 0; padding: 18px; border: 1px solid #475569; border-radius: 14px; background: #0b1325; }
+    #proContent h2 { font-size: 1.25rem; }
+    #proContent p { white-space: pre-wrap; }
+    footer { padding: 20px; text-align: center; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <header><h1>Universe Pro Notes</h1><p>Expanded learning material for manually approved members. The original public universe notes remain <a href="/universe-origin-notes.html" style="color:#67e8f9">available here</a>.</p></header>
+  <main>
+    <section id="loadingPanel" class="panel"><p id="status" class="state info" role="status">Checking sign-in and Pro access…</p></section>
+    <section id="signedOutPanel" class="panel hidden"><h2>Sign in to continue</h2><p class="muted">A free account is required to request Universe Pro access.</p><a class="button" href="/login.html">Sign in</a> <a class="button" href="/signup.html">Create account</a></section>
+    <section id="requestPanel" class="panel hidden">
+      <h2>Request Universe Pro access</h2>
+      <div id="paymentDetails" class="state info">UPI payment details are being configured. Please check back later.</div>
+      <p class="muted">After paying the displayed amount by UPI, enter the transaction reference below. Access is granted only after the site owner verifies the payment. Do not enter your UPI PIN or password here.</p>
+      <form id="requestForm">
+        <label for="paymentReference">UPI transaction reference</label>
+        <input id="paymentReference" name="paymentReference" minlength="5" maxlength="120" autocomplete="off" required>
+        <button id="submitRequest" type="submit">Submit for manual review</button>
+      </form>
+      <p id="requestStatus" class="state hidden" role="status"></p>
+    </section>
+    <section id="pendingPanel" class="panel hidden"><h2>Request received</h2><p class="state success">Your UPI reference is awaiting manual verification. Pro content will appear here after your access is approved.</p></section>
+    <section id="contentPanel" class="panel hidden"><h2 id="contentTitle">Universe Pro</h2><p id="contentIntro" class="muted"></p><div id="proContent"></div></section>
+    <section id="setupPanel" class="panel hidden"><h2>Pro access setup is incomplete</h2><p class="state error">The secure Pro database is not configured yet. The site owner must enable Firestore, publish the rules in <code>firestore.rules</code>, and add the Pro payment and content documents. No payment or approval was recorded.</p></section>
+    <section class="panel"><p class="muted">Need help? <a href="/" style="color:#67e8f9">Return to the homepage</a>.</p></section>
+  </main>
+  <footer>Pro notes are served only from the protected Firestore database to approved accounts.</footer>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGsr9puGVC1qXOl2VAllIDP__hjSIuS2o",
+      authDomain: "space-f58de.firebaseapp.com",
+      projectId: "space-f58de",
+      storageBucket: "space-f58de.firebasestorage.app",
+      messagingSenderId: "1025061659875",
+      appId: "1:1025061659875:web:e5546d3b89d6e90a8dd1d6",
+      measurementId: "G-64V1MSL3FX"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const panels = ["loadingPanel", "signedOutPanel", "requestPanel", "pendingPanel", "contentPanel", "setupPanel"];
+    function showPanel(id) {
+      panels.forEach(panelId => document.getElementById(panelId).classList.toggle("hidden", panelId !== id));
+    }
+    function showSetupError(error) {
+      console.error("Universe Pro setup error:", error);
+      showPanel("setupPanel");
+    }
+    function renderContent(data) {
+      document.getElementById("contentTitle").textContent = typeof data.title === "string" ? data.title : "Universe Pro Notes";
+      document.getElementById("contentIntro").textContent = typeof data.intro === "string" ? data.intro : "";
+      const container = document.getElementById("proContent");
+      container.replaceChildren();
+      if (!Array.isArray(data.sections) || data.sections.length === 0) {
+        const message = document.createElement("p");
+        message.className = "state info";
+        message.textContent = "Pro access is active, but the owner has not added the expanded notes yet.";
+        container.appendChild(message);
+      } else {
+        data.sections.forEach(section => {
+          if (!section || typeof section.heading !== "string" || typeof section.body !== "string") return;
+          const article = document.createElement("section");
+          const heading = document.createElement("h2");
+          heading.textContent = section.heading;
+          const body = document.createElement("p");
+          body.textContent = section.body;
+          article.append(heading, body);
+          container.appendChild(article);
+        });
+      }
+      showPanel("contentPanel");
+    }
+    async function loadMemberView(user) {
+      showPanel("loadingPanel");
+      try {
+        const member = await db.collection("proMembers").doc(user.uid).get();
+        if (member.exists && member.data().active === true) {
+          const notes = await db.collection("proContent").doc("universe").get();
+          if (!notes.exists) {
+            renderContent({ title: "Universe Pro Notes", intro: "Your Pro access is active." });
+            return;
+          }
+          renderContent(notes.data());
+          return;
+        }
+        const request = await db.collection("proRequests").doc(user.uid).get();
+        if (request.exists) {
+          showPanel("pendingPanel");
+          return;
+        }
+        const config = await db.collection("subscriptionConfig").doc("pro").get();
+        if (config.exists) {
+          const details = config.data();
+          const box = document.getElementById("paymentDetails");
+          const amount = Number(details.amountInr);
+          const lines = [];
+          if (Number.isFinite(amount) && amount > 0) lines.push("Price: ₹" + amount.toLocaleString("en-IN"));
+          if (typeof details.upiId === "string" && details.upiId.trim()) lines.push("UPI ID: " + details.upiId.trim());
+          if (typeof details.instructions === "string" && details.instructions.trim()) lines.push(details.instructions.trim());
+          box.textContent = lines.length ? lines.join("\n") : "UPI payment details are not fully configured. Please check back later.";
+          box.className = "state " + (lines.length >= 2 ? "info" : "error");
+          document.getElementById("requestForm").classList.toggle("hidden", lines.length < 2);
+        }
+        showPanel("requestPanel");
+      } catch (error) {
+        showSetupError(error);
+      }
+    }
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        showPanel("signedOutPanel");
+        return;
+      }
+      loadMemberView(user);
+    });
+    document.getElementById("requestForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const user = auth.currentUser;
+      if (!user) {
+        showPanel("signedOutPanel");
+        return;
+      }
+      const button = document.getElementById("submitRequest");
+      const message = document.getElementById("requestStatus");
+      button.disabled = true;
+      try {
+        await db.collection("proRequests").doc(user.uid).set({
+          uid: user.uid,
+          email: user.email || "",
+          paymentReference: document.getElementById("paymentReference").value.trim(),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showPanel("pendingPanel");
+      } catch (error) {
+        console.error("Could not submit Universe Pro request:", error);
+        message.textContent = "Could not submit your request. Check that the owner has configured Firestore, then try again.";
+        message.className = "state error";
+        message.classList.remove("hidden");
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
