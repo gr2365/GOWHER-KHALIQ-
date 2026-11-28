@@ -178,7 +178,9 @@
         await auth.signInWithEmailAndPassword(email, password);
         status.style.color = '#166534';
         status.textContent = 'Signed in successfully.';
-        window.location.href = '/';
+        const redirect = new URLSearchParams(window.location.search).get('redirect');
+        const target = redirect ? new URL(redirect, window.location.origin) : new URL('/', window.location.origin);
+        window.location.href = target.origin === window.location.origin ? target.pathname + target.search + target.hash : '/';
       } catch (error) {
         status.style.color = '#b91c1c';
         status.textContent = error.code === 'auth/invalid-credential'
