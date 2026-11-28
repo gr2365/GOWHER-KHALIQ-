@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isMember() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/proMembers/$(request.auth.uid))
+        && get(/databases/$(database)/documents/proMembers/$(request.auth.uid)).data.active == true;
+    }
+
+    match /proMembers/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+
+    match /proRequests/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, update, delete: if false;
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && !exists(/databases/$(database)/documents/proRequests/$(uid))
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'paymentReference', 'createdAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.paymentReference is string
+        && request.resource.data.paymentReference.size() >= 5
+        && request.resource.data.paymentReference.size() <= 120
+        && request.resource.data.createdAt == request.time;
+    }
+
+    match /proContent/{document} {
+      allow get: if isMember();
+      allow list, create, update, delete: if false;
+    }
+
+    match /subscriptionConfig/{document} {
+      allow get: if document == 'pro';
+      allow list, create, update, delete: if false;
+    }
+  }
+}
