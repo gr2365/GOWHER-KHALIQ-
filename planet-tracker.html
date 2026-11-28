@@ -214,7 +214,7 @@
   </main>
   <section id="cameraView" class="camera-view" hidden aria-label="Camera sky view">
     <video id="cameraVideo" autoplay playsinline muted></video>
-    <canvas id="cameraOverlay" aria-label="Calculated planet direction markers"></canvas>
+    <canvas id="cameraOverlay" aria-label="Calculated planet directions shown with detailed planet icons"></canvas>
     <div class="camera-guide"><strong>Planet sky guide</strong><br><span id="cameraStatus">Point your phone slowly across the sky.</span><span class="camera-note">Markers show calculated directions, not planets detected by the camera. Daylight, clouds and buildings can hide planets.</span></div>
     <button id="closeCamera" class="camera-close" type="button">Close camera</button>
   </section>
@@ -350,6 +350,103 @@
       drawCameraOverlay();
     }
 
+    function drawPlanetIcon(planet, x, y, radius) {
+      cameraCtx.save();
+      cameraCtx.shadowColor = planet.color;
+      cameraCtx.shadowBlur = 24;
+      if (planet.name === "Saturn") {
+        cameraCtx.save();
+        cameraCtx.translate(x, y);
+        cameraCtx.rotate(-0.22);
+        const ring = cameraCtx.createLinearGradient(-radius * 1.8, 0, radius * 1.8, 0);
+        ring.addColorStop(0, "#c6a56733");
+        ring.addColorStop(0.28, "#fff0b8");
+        ring.addColorStop(0.5, "#b8904d");
+        ring.addColorStop(0.72, "#fff0b8");
+        ring.addColorStop(1, "#c6a56733");
+        cameraCtx.strokeStyle = ring;
+        cameraCtx.lineWidth = radius * 0.34;
+        cameraCtx.beginPath();
+        cameraCtx.ellipse(0, 0, radius * 1.65, radius * 0.53, 0, 0, Math.PI * 2);
+        cameraCtx.stroke();
+        cameraCtx.restore();
+      }
+
+      const sphere = cameraCtx.createRadialGradient(x - radius * 0.38, y - radius * 0.42, radius * 0.05, x, y, radius * 1.18);
+      sphere.addColorStop(0, "#ffffff");
+      sphere.addColorStop(0.13, planet.color);
+      sphere.addColorStop(0.66, planet.color);
+      sphere.addColorStop(1, "#030712");
+      cameraCtx.fillStyle = sphere;
+      cameraCtx.beginPath();
+      cameraCtx.arc(x, y, radius, 0, Math.PI * 2);
+      cameraCtx.fill();
+
+      cameraCtx.save();
+      cameraCtx.beginPath();
+      cameraCtx.arc(x, y, radius * 0.96, 0, Math.PI * 2);
+      cameraCtx.clip();
+      cameraCtx.shadowBlur = 0;
+      if (planet.name === "Earth") {
+        cameraCtx.fillStyle = "#65d68a";
+        [[-0.42,-0.05,-0.18,-0.44,0.02,-0.24,-0.08,-0.02,-0.28,0.16],[-0.06,0.13,0.17,0.08,0.28,0.32,0.14,0.64,-0.01,0.34],[0.3,-0.5,0.57,-0.38,0.52,-0.15,0.34,-0.2]].forEach(points => {
+          cameraCtx.beginPath();
+          cameraCtx.moveTo(x + points[0] * radius, y + points[1] * radius);
+          for (let i = 2; i < points.length; i += 2) cameraCtx.lineTo(x + points[i] * radius, y + points[i + 1] * radius);
+          cameraCtx.closePath();
+          cameraCtx.fill();
+        });
+      } else if (planet.name === "Jupiter" || planet.name === "Saturn" || planet.name === "Uranus" || planet.name === "Neptune") {
+        const bandColor = planet.name === "Jupiter" ? "#713f2c99" : planet.name === "Saturn" ? "#fff0b866" : "#d8fbff55";
+        cameraCtx.strokeStyle = bandColor;
+        cameraCtx.lineWidth = Math.max(1.5, radius * 0.19);
+        for (const offset of [-0.62, -0.32, 0.05, 0.38, 0.66]) {
+          cameraCtx.beginPath();
+          cameraCtx.moveTo(x - radius, y + offset * radius);
+          cameraCtx.quadraticCurveTo(x, y + (offset - 0.08) * radius, x + radius, y + offset * radius);
+          cameraCtx.stroke();
+        }
+        if (planet.name === "Jupiter") {
+          cameraCtx.fillStyle = "#b75d42";
+          cameraCtx.beginPath();
+          cameraCtx.ellipse(x + radius * 0.38, y + radius * 0.18, radius * 0.2, radius * 0.1, -0.15, 0, Math.PI * 2);
+          cameraCtx.fill();
+        }
+      } else if (planet.name === "Mercury" || planet.name === "Mars") {
+        cameraCtx.fillStyle = planet.name === "Mars" ? "#7f1d1d99" : "#57534e99";
+        for (const crater of [[-0.35,-0.28,0.14],[0.32,-0.14,0.2],[-0.08,0.3,0.22],[0.42,0.42,0.1]]) {
+          cameraCtx.beginPath();
+          cameraCtx.arc(x + crater[0] * radius, y + crater[1] * radius, crater[2] * radius, 0, Math.PI * 2);
+          cameraCtx.fill();
+        }
+      } else {
+        cameraCtx.strokeStyle = "#fff8d666";
+        cameraCtx.lineWidth = Math.max(1.5, radius * 0.11);
+        for (const offset of [-0.48, -0.12, 0.25, 0.55]) {
+          cameraCtx.beginPath();
+          cameraCtx.moveTo(x - radius, y + offset * radius);
+          cameraCtx.quadraticCurveTo(x, y + (offset - 0.1) * radius, x + radius, y + offset * radius);
+          cameraCtx.stroke();
+        }
+      }
+      cameraCtx.restore();
+
+      const shine = cameraCtx.createRadialGradient(x - radius * 0.38, y - radius * 0.4, 0, x - radius * 0.3, y - radius * 0.3, radius * 0.75);
+      shine.addColorStop(0, "#ffffff88");
+      shine.addColorStop(1, "#ffffff00");
+      cameraCtx.fillStyle = shine;
+      cameraCtx.beginPath();
+      cameraCtx.arc(x, y, radius * 0.94, 0, Math.PI * 2);
+      cameraCtx.fill();
+      cameraCtx.shadowBlur = 0;
+      cameraCtx.strokeStyle = "#ffffffbb";
+      cameraCtx.lineWidth = 1;
+      cameraCtx.beginPath();
+      cameraCtx.arc(x, y, radius, 0, Math.PI * 2);
+      cameraCtx.stroke();
+      cameraCtx.restore();
+    }
+
     function drawCameraOverlay() {
       if (document.getElementById("cameraView").hidden || !cameraPositions.length) return;
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
@@ -370,27 +467,16 @@
         if (Math.abs(horizontalOffset) > 65 || Math.abs(verticalOffset) > 55) continue;
         const x = viewportWidth / 2 + Math.tan(horizontalOffset * Math.PI / 180) * focalLength;
         const y = viewportHeight / 2 - Math.tan(verticalOffset * Math.PI / 180) * focalLength;
-        if (x < 32 || x > viewportWidth - 32 || y < 70 || y > viewportHeight - 55) continue;
+        if (x < 34 || x > viewportWidth - 34 || y < 95 || y > viewportHeight - 55) continue;
+        drawPlanetIcon(planet, x, y, planet.name === "Saturn" ? 17 : 15);
         cameraCtx.save();
-        cameraCtx.strokeStyle = planet.color;
-        cameraCtx.fillStyle = planet.color;
-        cameraCtx.shadowColor = planet.color;
-        cameraCtx.shadowBlur = 18;
-        cameraCtx.lineWidth = 2;
-        cameraCtx.beginPath();
-        cameraCtx.arc(x, y, 11, 0, Math.PI * 2);
-        cameraCtx.stroke();
-        cameraCtx.beginPath();
-        cameraCtx.arc(x, y, 3, 0, Math.PI * 2);
-        cameraCtx.fill();
-        cameraCtx.shadowBlur = 0;
         cameraCtx.font = "700 14px system-ui";
         cameraCtx.textAlign = "center";
         cameraCtx.lineWidth = 4;
         cameraCtx.strokeStyle = "#020617";
-        cameraCtx.strokeText(planet.name, x, y - 17);
+        cameraCtx.strokeText(planet.name, x, y - 25);
         cameraCtx.fillStyle = "white";
-        cameraCtx.fillText(planet.name, x, y - 17);
+        cameraCtx.fillText(planet.name, x, y - 25);
         cameraCtx.restore();
         markers++;
       }
